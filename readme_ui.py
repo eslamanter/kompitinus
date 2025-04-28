@@ -7,7 +7,7 @@ from markdown import markdown
 class ReadmeViewer(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("README Viewer - Cool Edition")
+        self.setWindowTitle("README Viewer")
 
         # Create a central widget and layout
         central_widget = QWidget()

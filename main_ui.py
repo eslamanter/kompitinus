@@ -2,9 +2,15 @@ import sys
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QHBoxLayout,
     QFrame, QTableView, QSplitter, QLineEdit, QTextEdit, QCheckBox,
-    QPushButton, QDateTimeEdit, QTreeView, QStatusBar, QMenu, QAction, QToolButton, QFileDialog, QMenuBar)
-from PyQt5.QtGui import QStandardItemModel, QStandardItem
-from PyQt5.QtCore import Qt
+    QPushButton, QDateTimeEdit, QTreeView, QStatusBar, QMenu, QAction, QToolButton, QFileDialog)
+from PyQt5.QtGui import QStandardItemModel, QStandardItem, QDesktopServices
+from PyQt5.QtCore import Qt, QUrl
+
+
+def send_email(label, task_id):
+    email_address = label.text()
+    mailto_link = f"mailto:{email_address}?subject=[HYtask_{task_id}] "
+    QDesktopServices.openUrl(QUrl(mailto_link))
 
 
 class MainWidget(QWidget):
@@ -60,10 +66,14 @@ class MainWidget(QWidget):
         right_meta_layout = QVBoxLayout()
         self.sender_label = QLabel("Sender:")
         self.sender_full_name = QLabel("John Doe")
-        self.sender_email = QLabel("john.doe@example.com")
+        self.sender_email = QLabel('<a href="#">john.doe@example.com</a>')
+        self.sender_email.linkActivated.connect(lambda: send_email(self.sender_email, self.task_id_value.text()))
+
         self.receiver_label = QLabel("Receiver:")
         self.receiver_full_name = QLabel("Jane Doe")
-        self.receiver_email = QLabel("jane.doe@example.com")
+        self.receiver_email = QLabel('<a href="#">john.doe@example.com</a>')
+        self.receiver_email.linkActivated.connect(lambda: send_email(self.receiver_email, self.task_id_value.text()))
+
         right_meta_layout.addWidget(self.sender_label)
         right_meta_layout.addWidget(self.sender_full_name)
         right_meta_layout.addWidget(self.sender_email)
@@ -262,12 +272,11 @@ class MainWindow(QMainWindow):
         task_menu.addAction("Update")
         task_menu.addAction("Send")
 
-
-
         # Info Menu
         info_menu = menu_bar.addMenu("Info")
         info_menu.addAction("About")
         info_menu.addAction("Help")
+
 
     def center(self):
         screen = QApplication.desktop().screenGeometry()
