@@ -2,7 +2,7 @@ import sys
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QHBoxLayout,
     QFrame, QTableView, QSplitter, QLineEdit, QTextEdit, QCheckBox,
-    QPushButton, QDateTimeEdit, QTreeView, QStatusBar)
+    QPushButton, QDateTimeEdit, QTreeView, QStatusBar, QMenu, QAction, QToolButton, QFileDialog)
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtCore import Qt
 
@@ -86,16 +86,16 @@ class MainWidget(QWidget):
         main_vertical_layout = QVBoxLayout()
 
         # Add horizontal line before Task
-        horizontal_line = QFrame()
-        horizontal_line.setFrameShape(QFrame.HLine)
-        horizontal_line.setFrameShadow(QFrame.Sunken)
+        horizontal_line_1 = QFrame()
+        horizontal_line_1.setFrameShape(QFrame.HLine)
+        horizontal_line_1.setFrameShadow(QFrame.Sunken)
         main_vertical_layout.addLayout(meta_layout)
-        main_vertical_layout.addWidget(horizontal_line)
+        main_vertical_layout.addWidget(horizontal_line_1)
 
         # Task
         self.task_layout = QHBoxLayout()
         self.task_label = QLabel("Task:")
-        self.starred_checkbox = QCheckBox("Task Starred")
+        self.starred_checkbox = QCheckBox("Starred")
         self.task_layout.addWidget(self.task_label)
         self.task_layout.addStretch()
         self.task_layout.addWidget(self.starred_checkbox)
@@ -110,10 +110,36 @@ class MainWidget(QWidget):
         main_vertical_layout.addWidget(self.body_input)
 
         # Reference
+        reference_layout = QHBoxLayout()
         self.reference_label = QLabel("Reference:")
-        self.reference_input = QLineEdit()
-        main_vertical_layout.addWidget(self.reference_label)
-        main_vertical_layout.addWidget(self.reference_input)
+        self.reference_label.setOpenExternalLinks(True)
+        self.menu_button = QToolButton(self)
+        self.menu_button.setText("... ")
+        self.menu_button.setPopupMode(QToolButton.InstantPopup)
+        reference_layout.addWidget(self.reference_label)
+        reference_layout.addWidget(self.menu_button)
+        main_vertical_layout.addLayout(reference_layout)
+
+        horizontal_line_2 = QFrame()
+        horizontal_line_2.setFrameShape(QFrame.HLine)
+        horizontal_line_2.setFrameShadow(QFrame.Sunken)
+        main_vertical_layout.addWidget(horizontal_line_2)
+
+        # Create menu associated to menu button
+        self.menu = QMenu(self)
+        open_folder_action = QAction("Open Folder", self)
+        open_folder_action.triggered.connect(self.open_folder_dialog)
+        copy_link_action = QAction("Copy Link", self)
+        copy_link_action.triggered.connect(self.copy_reference_link)
+        paste_link_action = QAction("Paste Link", self)
+        paste_link_action.triggered.connect(self.paste_reference_link)
+        delete_link_action = QAction("Delete Link", self)
+        delete_link_action.triggered.connect(self.delete_reference_link)
+        self.menu.addAction(open_folder_action)
+        self.menu.addAction(copy_link_action)
+        self.menu.addAction(paste_link_action)
+        self.menu.addAction(delete_link_action)
+        self.menu_button.setMenu(self.menu)
 
         # Due At
         due_at_layout = QHBoxLayout()
@@ -126,7 +152,6 @@ class MainWidget(QWidget):
         self.due_at_input.setCalendarPopup(True)
         main_vertical_layout.addLayout(due_at_layout)
         main_vertical_layout.addWidget(self.due_at_input)
-
 
         # Expected At
         expected_at_layout = QHBoxLayout()
@@ -160,10 +185,10 @@ class MainWidget(QWidget):
         main_vertical_layout.addLayout(self.archived_layout)
 
         # Add horizontal line between checkboxes and update button
-        separator_line_between_sections = QFrame()
-        separator_line_between_sections.setFrameShape(QFrame.HLine)
-        separator_line_between_sections.setFrameShadow(QFrame.Sunken)
-        main_vertical_layout.addWidget(separator_line_between_sections)
+        horizontal_line_3 = QFrame()
+        horizontal_line_3.setFrameShape(QFrame.HLine)
+        horizontal_line_3.setFrameShadow(QFrame.Sunken)
+        main_vertical_layout.addWidget(horizontal_line_3)
 
         # Add update task button
         self.update_button_layout = QHBoxLayout()
@@ -184,6 +209,26 @@ class MainWidget(QWidget):
         layout = QVBoxLayout(self)
         layout.addWidget(self.right_splitter)
         self.setLayout(layout)
+
+    def open_folder_dialog(self):
+        folder_path = QFileDialog.getExistingDirectory(self, "Select Folder")
+        self.reference_label.setText(f'<a href={folder_path}>Reference:</a>')
+        self.reference_label.setToolTip(folder_path)
+
+    def copy_reference_link(self):
+        copied_text = self.reference_label.toolTip()
+        clipboard = QApplication.clipboard()
+        clipboard.setText(copied_text)
+
+    def paste_reference_link(self):
+        clipboard = QApplication.clipboard()
+        pasted_text = clipboard.text()
+        self.reference_label.setText(f'<a href={pasted_text}>Reference:</a>')
+        self.reference_label.setToolTip(pasted_text)
+
+    def delete_reference_link(self):
+        self.reference_label.setText("Reference:")
+        self.reference_label.setToolTip("")
 
 
 class MainWindow(QMainWindow):
