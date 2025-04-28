@@ -93,12 +93,18 @@ class MainWidget(QWidget):
         main_vertical_layout.addWidget(horizontal_line)
 
         # Task
+        self.task_layout = QHBoxLayout()
         self.task_label = QLabel("Task:")
+        self.starred_checkbox = QCheckBox("Task Starred")
+        self.task_layout.addWidget(self.task_label)
+        self.task_layout.addWidget(self.starred_checkbox)
+        main_vertical_layout.addLayout(self.task_layout)
+
+        # Task title input
         self.title_input = QLineEdit()
-        main_vertical_layout.addWidget(self.task_label)
         main_vertical_layout.addWidget(self.title_input)
 
-        # Task Body
+        # Task body input
         self.body_input = QTextEdit()
         main_vertical_layout.addWidget(self.body_input)
 
@@ -137,20 +143,22 @@ class MainWidget(QWidget):
         main_vertical_layout.addLayout(expected_at_layout)
 
         # Reply
+        self.reply_layout = QHBoxLayout()
         self.reply_label = QLabel("Reply:")
+        self.done_checkbox = QCheckBox("Task Done")
+        self.reply_layout.addWidget(self.reply_label)
+        self.reply_layout.addWidget(self.done_checkbox)
+        main_vertical_layout.addLayout(self.reply_layout)
+
+        # Reply input
         self.reply_input = QTextEdit()
-        main_vertical_layout.addWidget(self.reply_label)
         main_vertical_layout.addWidget(self.reply_input)
 
-        # Task Starred, Done, and Archived
-        self.checkbox_layout = QHBoxLayout()
-        self.task_starred_checkbox = QCheckBox("Task Starred")
-        self.task_done_checkbox = QCheckBox("Task Done")
-        self.task_archived_checkbox = QCheckBox("Archived")
-        self.checkbox_layout.addWidget(self.task_starred_checkbox)
-        self.checkbox_layout.addWidget(self.task_done_checkbox)
-        self.checkbox_layout.addWidget(self.task_archived_checkbox)
-        main_vertical_layout.addLayout(self.checkbox_layout)
+        # Archived checkbox
+        self.archived_layout = QHBoxLayout()
+        self.archived_checkbox = QCheckBox("Archived")
+        self.archived_layout.addWidget(self.archived_checkbox)
+        main_vertical_layout.addLayout(self.archived_layout)
 
         # Add horizontal line between checkboxes and update button
         separator_line_between_sections = QFrame()
