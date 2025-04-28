@@ -2,7 +2,7 @@ import sys
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QHBoxLayout,
     QFrame, QTableView, QSplitter, QLineEdit, QTextEdit, QCheckBox,
-    QPushButton, QDateTimeEdit, QTreeView, QStatusBar, QMenu, QAction, QToolButton, QFileDialog)
+    QPushButton, QDateTimeEdit, QTreeView, QStatusBar, QMenu, QAction, QToolButton, QFileDialog, QMenuBar)
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtCore import Qt
 
@@ -22,7 +22,7 @@ class MainWidget(QWidget):
         inbox_item = QStandardItem("Inbox")
         outbox_item = QStandardItem("Outbox")
         selfbox_item = QStandardItem("Selfbox")
-        starred_item = QStandardItem("Starredbox")
+        starred_item = QStandardItem("Starred")
         archived_item = QStandardItem("Archive")
 
         root_item.appendRow(inbox_item)
@@ -72,14 +72,14 @@ class MainWidget(QWidget):
         right_meta_layout.addWidget(self.receiver_email)
 
         # Create a line to separate the two columns
-        separator_line = QFrame()
-        separator_line.setFrameShape(QFrame.VLine)
-        separator_line.setFrameShadow(QFrame.Sunken)
+        vertical_line = QFrame()
+        vertical_line.setFrameShape(QFrame.VLine)
+        vertical_line.setFrameShadow(QFrame.Sunken)
 
         # Combine left and right columns into one horizontal layout
         meta_layout = QHBoxLayout()
         meta_layout.addLayout(left_meta_layout)
-        meta_layout.addWidget(separator_line)
+        meta_layout.addWidget(vertical_line)
         meta_layout.addLayout(right_meta_layout)
 
         # Other components: Title, Body, Reference, Dates, etc.
@@ -143,7 +143,7 @@ class MainWidget(QWidget):
 
         # Due At
         due_at_layout = QHBoxLayout()
-        self.due_at_label = QLabel("Due At:")
+        self.due_at_label = QLabel("Due at:")
         self.due_at_days = QLabel("42")
         self.due_at_days.setAlignment(Qt.AlignRight)
         due_at_layout.addWidget(self.due_at_label)
@@ -155,7 +155,7 @@ class MainWidget(QWidget):
 
         # Expected At
         expected_at_layout = QHBoxLayout()
-        self.expected_at_label = QLabel("Expected At:")
+        self.expected_at_label = QLabel("Expected at:")
         self.expected_at_days = QLabel("56")
         self.expected_at_days.setAlignment(Qt.AlignRight)
         expected_at_layout.addWidget(self.expected_at_label)
@@ -168,7 +168,7 @@ class MainWidget(QWidget):
         # Reply
         self.reply_layout = QHBoxLayout()
         self.reply_label = QLabel("Reply:")
-        self.done_checkbox = QCheckBox("Task Done")
+        self.done_checkbox = QCheckBox("Done")
         self.reply_layout.addWidget(self.reply_label)
         self.reply_layout.addStretch()
         self.reply_layout.addWidget(self.done_checkbox)
@@ -245,8 +245,29 @@ class MainWindow(QMainWindow):
         self.setStatusBar(self.status_bar)
         self.status_bar.showMessage("Ready")
 
+        self.create_menu_bar()
         self.adjustSize()
         self.center()
+
+    def create_menu_bar(self):
+        menu_bar = self.menuBar()
+
+        # Profile Menu
+        profile_menu = menu_bar.addMenu("Profile")
+        profile_menu.addAction("Edit Profile")
+        profile_menu.addAction("Logout")
+
+        # Task Menu
+        task_menu = menu_bar.addMenu("Task")
+        task_menu.addAction("Update")
+        task_menu.addAction("Send")
+
+
+
+        # Info Menu
+        info_menu = menu_bar.addMenu("Info")
+        info_menu.addAction("About")
+        info_menu.addAction("Help")
 
     def center(self):
         screen = QApplication.desktop().screenGeometry()
