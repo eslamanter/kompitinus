@@ -6,7 +6,6 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QDesktopServices
 from PyQt5.QtCore import Qt, QUrl
 
-
 def send_email(label, task_id):
     email_address = label.text()
     mailto_link = f"mailto:{email_address}?subject=[HYtask_{task_id}] "
@@ -16,6 +15,16 @@ def send_email(label, task_id):
 class MainWidget(QWidget):
     def __init__(self):
         super().__init__()
+
+
+
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("HYtask")
+
+        central_widget = QWidget()
 
         # Add tree view
         self.tree_view = QTreeView(self)
@@ -210,54 +219,55 @@ class MainWidget(QWidget):
         task_details_widget = QWidget()
         task_details_widget.setLayout(main_vertical_layout)
 
-        # Create a splitter and add the table view and task details widget
+        # Create a splitter and add tree/table views and task details widget
         self.right_splitter = QSplitter(Qt.Horizontal)
         self.right_splitter.addWidget(self.left_splitter)
         self.right_splitter.addWidget(task_details_widget)
 
         # Set the splitter as the main layout
-        layout = QVBoxLayout(self)
-        layout.addWidget(self.right_splitter)
-        self.setLayout(layout)
+        central_layout = QVBoxLayout(central_widget)
+        central_layout.addWidget(self.right_splitter)
+
+        self.setCentralWidget(central_widget)
+
+        # Create menu bar
+        self.create_menu_bar()
+
+        # Create status bar
+        self.status_bar = QStatusBar()
+        self.setStatusBar(self.status_bar)
+
+        self.adjustSize()
+        self.center()
 
     def open_folder_dialog(self):
         folder_path = QFileDialog.getExistingDirectory(self, "Select Folder")
         self.reference_label.setText(f'<a href={folder_path}>Reference:</a>')
         self.reference_label.setToolTip(folder_path)
+        if folder_path:
+            self.status_bar.showMessage(f"Selected: {folder_path}")
 
     def copy_reference_link(self):
         copied_text = self.reference_label.toolTip()
         clipboard = QApplication.clipboard()
         clipboard.setText(copied_text)
+        if copied_text:
+            self.status_bar.showMessage(f"Copied: {copied_text}")
 
     def paste_reference_link(self):
         clipboard = QApplication.clipboard()
         pasted_text = clipboard.text()
         self.reference_label.setText(f'<a href={pasted_text}>Reference:</a>')
         self.reference_label.setToolTip(pasted_text)
+        if pasted_text:
+            self.status_bar.showMessage(f"Pasted: {pasted_text}")
 
     def delete_reference_link(self):
+        deleted_text = self.reference_label.toolTip()
         self.reference_label.setText("Reference:")
         self.reference_label.setToolTip("")
-
-
-class MainWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("HYtask")
-
-        # Set main widget as the central widget
-        self.main_widget = MainWidget()
-        self.setCentralWidget(self.main_widget)
-
-        # Add status bar
-        self.status_bar = QStatusBar()
-        self.setStatusBar(self.status_bar)
-        self.status_bar.showMessage("Ready")
-
-        self.create_menu_bar()
-        self.adjustSize()
-        self.center()
+        if deleted_text:
+            self.status_bar.showMessage(f"Deleted: {deleted_text}")
 
     def create_menu_bar(self):
         menu_bar = self.menuBar()
