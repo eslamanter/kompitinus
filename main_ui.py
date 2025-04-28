@@ -97,6 +97,7 @@ class MainWidget(QWidget):
         self.task_label = QLabel("Task:")
         self.starred_checkbox = QCheckBox("Task Starred")
         self.task_layout.addWidget(self.task_label)
+        self.task_layout.addStretch()
         self.task_layout.addWidget(self.starred_checkbox)
         main_vertical_layout.addLayout(self.task_layout)
 
@@ -115,38 +116,36 @@ class MainWidget(QWidget):
         main_vertical_layout.addWidget(self.reference_input)
 
         # Due At
-        due_at_layout = QVBoxLayout()
-        due_at_labels_layout = QHBoxLayout()
+        due_at_layout = QHBoxLayout()
         self.due_at_label = QLabel("Due At:")
-        self.due_at_number = QLabel("42")  # Number of days
-        self.due_at_number.setAlignment(Qt.AlignRight)
-        due_at_labels_layout.addWidget(self.due_at_label)
-        due_at_labels_layout.addWidget(self.due_at_number)
+        self.due_at_days = QLabel("42")
+        self.due_at_days.setAlignment(Qt.AlignRight)
+        due_at_layout.addWidget(self.due_at_label)
+        due_at_layout.addWidget(self.due_at_days)
         self.due_at_input = QDateTimeEdit()
         self.due_at_input.setCalendarPopup(True)
-        due_at_layout.addLayout(due_at_labels_layout)
-        due_at_layout.addWidget(self.due_at_input)
         main_vertical_layout.addLayout(due_at_layout)
+        main_vertical_layout.addWidget(self.due_at_input)
+
 
         # Expected At
-        expected_at_layout = QVBoxLayout()
-        expected_at_labels_layout = QHBoxLayout()
+        expected_at_layout = QHBoxLayout()
         self.expected_at_label = QLabel("Expected At:")
-        self.expected_at_number = QLabel("56")  # Number of days
-        self.expected_at_number.setAlignment(Qt.AlignRight)
-        expected_at_labels_layout.addWidget(self.expected_at_label)
-        expected_at_labels_layout.addWidget(self.expected_at_number)
+        self.expected_at_days = QLabel("56")
+        self.expected_at_days.setAlignment(Qt.AlignRight)
+        expected_at_layout.addWidget(self.expected_at_label)
+        expected_at_layout.addWidget(self.expected_at_days)
         self.expected_at_input = QDateTimeEdit()
         self.expected_at_input.setCalendarPopup(True)
-        expected_at_layout.addLayout(expected_at_labels_layout)
-        expected_at_layout.addWidget(self.expected_at_input)
         main_vertical_layout.addLayout(expected_at_layout)
+        main_vertical_layout.addWidget(self.expected_at_input)
 
         # Reply
         self.reply_layout = QHBoxLayout()
         self.reply_label = QLabel("Reply:")
         self.done_checkbox = QCheckBox("Task Done")
         self.reply_layout.addWidget(self.reply_label)
+        self.reply_layout.addStretch()
         self.reply_layout.addWidget(self.done_checkbox)
         main_vertical_layout.addLayout(self.reply_layout)
 
