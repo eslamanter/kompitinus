@@ -1,28 +1,23 @@
 import sys
+import config
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QHBoxLayout,
     QFrame, QTableView, QSplitter, QLineEdit, QTextEdit, QCheckBox,
     QPushButton, QDateTimeEdit, QTreeView, QStatusBar, QMenu, QAction, QToolButton, QFileDialog)
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QDesktopServices
 from PyQt5.QtCore import Qt, QUrl
+from readme_ui import ReadmeViewer
+from constants import *
 
-def send_email(label, task_id):
-    email_address = label.text()
-    mailto_link = f"mailto:{email_address}?subject=[HYtask_{task_id}] "
+def send_email(email_address):
+    mailto_link = f"mailto:{email_address}?subject=[{APP_NAME}_{config.DB_TASK_ID}] "
     QDesktopServices.openUrl(QUrl(mailto_link))
-
-
-class MainWidget(QWidget):
-    def __init__(self):
-        super().__init__()
-
-
 
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("HYtask")
+        self.setWindowTitle(APP_NAME)
 
         central_widget = QWidget()
 
@@ -34,11 +29,11 @@ class MainWindow(QMainWindow):
 
         # Add items to the tree view
         root_item = self.tree_model.invisibleRootItem()
-        inbox_item = QStandardItem("Inbox")
-        outbox_item = QStandardItem("Outbox")
-        selfbox_item = QStandardItem("Selfbox")
-        starred_item = QStandardItem("Starred")
-        archived_item = QStandardItem("Archive")
+        inbox_item = QStandardItem(UI_INBOX)
+        outbox_item = QStandardItem(UI_OUTBOX)
+        selfbox_item = QStandardItem(UI_SELFBOX)
+        starred_item = QStandardItem(UI_STARRED)
+        archived_item = QStandardItem(UI_ARCHIVED)
 
         root_item.appendRow(inbox_item)
         root_item.appendRow(outbox_item)
@@ -58,11 +53,11 @@ class MainWindow(QMainWindow):
 
         # Left column: Task ID, Created At, Modified At
         left_meta_layout = QVBoxLayout()
-        self.task_id_label = QLabel("Task ID:")
+        self.task_id_label = QLabel(f"{UI_TASK_ID}:")
         self.task_id_value = QLabel("12345")
-        self.created_at_label = QLabel("Created At:")
+        self.created_at_label = QLabel(f"{UI_CREATED_AT}:")
         self.created_at_value = QLabel("2025-04-27 12:00")
-        self.modified_at_label = QLabel("Modified At:")
+        self.modified_at_label = QLabel(f"{UI_MODIFIED_AT}:")
         self.modified_at_value = QLabel("2025-04-27 12:30")
         left_meta_layout.addWidget(self.task_id_label)
         left_meta_layout.addWidget(self.task_id_value)
@@ -73,15 +68,15 @@ class MainWindow(QMainWindow):
 
         # Right column: Sender, Receiver
         right_meta_layout = QVBoxLayout()
-        self.sender_label = QLabel("Sender:")
+        self.sender_label = QLabel(f"{UI_SENDER}:")
         self.sender_full_name = QLabel("John Doe")
-        self.sender_email = QLabel('<a href="#">john.doe@example.com</a>')
-        self.sender_email.linkActivated.connect(lambda: send_email(self.sender_email, self.task_id_value.text()))
+        self.sender_email = QLabel(F'<a href="#">{"example@abc.xyz"}</a>')
+        self.sender_email.linkActivated.connect(lambda: send_email("")) #
 
-        self.receiver_label = QLabel("Receiver:")
+        self.receiver_label = QLabel(f"{UI_RECEIVER}:")
         self.receiver_full_name = QLabel("Jane Doe")
-        self.receiver_email = QLabel('<a href="#">john.doe@example.com</a>')
-        self.receiver_email.linkActivated.connect(lambda: send_email(self.receiver_email, self.task_id_value.text()))
+        self.receiver_email = QLabel(f'<a href="#">{"example@abc.xyz"}</a>')
+        self.receiver_email.linkActivated.connect(lambda: send_email("")) #
 
         right_meta_layout.addWidget(self.sender_label)
         right_meta_layout.addWidget(self.sender_full_name)
@@ -113,8 +108,8 @@ class MainWindow(QMainWindow):
 
         # Task
         self.task_layout = QHBoxLayout()
-        self.task_label = QLabel("Task:")
-        self.starred_checkbox = QCheckBox("Starred")
+        self.task_label = QLabel(f"{UI_TASK}:")
+        self.starred_checkbox = QCheckBox(UI_STARRED)
         self.task_layout.addWidget(self.task_label)
         self.task_layout.addStretch()
         self.task_layout.addWidget(self.starred_checkbox)
@@ -130,7 +125,7 @@ class MainWindow(QMainWindow):
 
         # Reference
         reference_layout = QHBoxLayout()
-        self.reference_label = QLabel("Reference:")
+        self.reference_label = QLabel(f"{UI_REFERENCE}:")
         self.reference_label.setOpenExternalLinks(True)
         self.menu_button = QToolButton(self)
         self.menu_button.setText("... ")
@@ -146,13 +141,13 @@ class MainWindow(QMainWindow):
 
         # Create menu associated to menu button
         self.menu = QMenu(self)
-        open_folder_action = QAction("Open Folder", self)
+        open_folder_action = QAction(UI_REFERENCE_OPEN, self)
         open_folder_action.triggered.connect(self.open_folder_dialog)
-        copy_link_action = QAction("Copy Link", self)
+        copy_link_action = QAction(UI_REFERENCE_COPY, self)
         copy_link_action.triggered.connect(self.copy_reference_link)
-        paste_link_action = QAction("Paste Link", self)
+        paste_link_action = QAction(UI_REFERENCE_PASTE, self)
         paste_link_action.triggered.connect(self.paste_reference_link)
-        delete_link_action = QAction("Delete Link", self)
+        delete_link_action = QAction(UI_REFERENCE_DELETE, self)
         delete_link_action.triggered.connect(self.delete_reference_link)
         self.menu.addAction(open_folder_action)
         self.menu.addAction(copy_link_action)
@@ -162,7 +157,7 @@ class MainWindow(QMainWindow):
 
         # Due At
         due_at_layout = QHBoxLayout()
-        self.due_at_label = QLabel("Due at:")
+        self.due_at_label = QLabel(f"{UI_DUE_AT}:")
         self.due_at_days = QLabel("42")
         self.due_at_days.setAlignment(Qt.AlignRight)
         due_at_layout.addWidget(self.due_at_label)
@@ -174,7 +169,7 @@ class MainWindow(QMainWindow):
 
         # Expected At
         expected_at_layout = QHBoxLayout()
-        self.expected_at_label = QLabel("Expected at:")
+        self.expected_at_label = QLabel(f"{UI_EXPECTED_AT}:")
         self.expected_at_days = QLabel("56")
         self.expected_at_days.setAlignment(Qt.AlignRight)
         expected_at_layout.addWidget(self.expected_at_label)
@@ -186,8 +181,8 @@ class MainWindow(QMainWindow):
 
         # Reply
         self.reply_layout = QHBoxLayout()
-        self.reply_label = QLabel("Reply:")
-        self.done_checkbox = QCheckBox("Done")
+        self.reply_label = QLabel(f"{UI_REPLY}:")
+        self.done_checkbox = QCheckBox(UI_DONE)
         self.reply_layout.addWidget(self.reply_label)
         self.reply_layout.addStretch()
         self.reply_layout.addWidget(self.done_checkbox)
@@ -199,7 +194,7 @@ class MainWindow(QMainWindow):
 
         # Archived checkbox
         self.archived_layout = QHBoxLayout()
-        self.archived_checkbox = QCheckBox("Archived")
+        self.archived_checkbox = QCheckBox(UI_ARCHIVED)
         self.archived_layout.addWidget(self.archived_checkbox)
         main_vertical_layout.addLayout(self.archived_layout)
 
@@ -211,7 +206,7 @@ class MainWindow(QMainWindow):
 
         # Add update task button
         self.update_button_layout = QHBoxLayout()
-        self.update_button = QPushButton("Update Task")
+        self.update_button = QPushButton(UI_UPDATE_TASK)
         self.update_button_layout.addWidget(self.update_button)
         main_vertical_layout.addLayout(self.update_button_layout)
 
@@ -241,52 +236,80 @@ class MainWindow(QMainWindow):
         self.center()
 
     def open_folder_dialog(self):
-        folder_path = QFileDialog.getExistingDirectory(self, "Select Folder")
-        self.reference_label.setText(f'<a href={folder_path}>Reference:</a>')
+        folder_path = QFileDialog.getExistingDirectory(self, UI_REFERENCE_SELECT)
+        self.reference_label.setText(f'<a href={folder_path}>{UI_REFERENCE}</a>')
         self.reference_label.setToolTip(folder_path)
         if folder_path:
-            self.status_bar.showMessage(f"Selected: {folder_path}")
+            self.status_bar.showMessage(f"{UI_SELECTED}: {folder_path}")
 
     def copy_reference_link(self):
         copied_text = self.reference_label.toolTip()
         clipboard = QApplication.clipboard()
         clipboard.setText(copied_text)
         if copied_text:
-            self.status_bar.showMessage(f"Copied: {copied_text}")
+            self.status_bar.showMessage(f"{UI_COPIED}: {copied_text}")
 
     def paste_reference_link(self):
         clipboard = QApplication.clipboard()
         pasted_text = clipboard.text()
-        self.reference_label.setText(f'<a href={pasted_text}>Reference:</a>')
+        self.reference_label.setText(f'<a href={pasted_text}>{UI_REFERENCE}</a>')
         self.reference_label.setToolTip(pasted_text)
         if pasted_text:
-            self.status_bar.showMessage(f"Pasted: {pasted_text}")
+            self.status_bar.showMessage(f"{UI_PASTED}: {pasted_text}")
 
     def delete_reference_link(self):
         deleted_text = self.reference_label.toolTip()
         self.reference_label.setText("Reference:")
         self.reference_label.setToolTip("")
         if deleted_text:
-            self.status_bar.showMessage(f"Deleted: {deleted_text}")
+            self.status_bar.showMessage(f"{UI_DELETED}: {deleted_text}")
 
     def create_menu_bar(self):
         menu_bar = self.menuBar()
 
-        # Profile Menu
-        profile_menu = menu_bar.addMenu("Profile")
-        profile_menu.addAction("Edit Profile")
-        profile_menu.addAction("Logout")
+        # Config menu
+        config_menu = menu_bar.addMenu(UI_CONFIG)
 
-        # Task Menu
-        task_menu = menu_bar.addMenu("Task")
-        task_menu.addAction("Update")
-        task_menu.addAction("Send")
+            # Database menu
+        database_menu = config_menu.addMenu(UI_DATABASE)
+        database_menu.addAction(UI_MAIN)
+        database_menu.addAction(UI_LOCAL)
 
-        # Info Menu
-        info_menu = menu_bar.addMenu("Info")
-        info_menu.addAction("About")
-        info_menu.addAction("Help")
+            # Profile menu
+        profile_menu = config_menu.addMenu(UI_USER)
+        profile_menu.addAction(UI_EDIT)
+        profile_menu.addAction(UI_LOGOUT)
 
+            # Sync menu
+        sync_menu = config_menu.addMenu(UI_SYNC_MODE)
+        sync_menu.addAction(UI_MANUAL)
+
+                # Auto menu
+        auto_sync = sync_menu.addMenu(UI_AUTO)
+        auto_sync.addAction(UI_1MIN)
+        auto_sync.addAction(UI_5MIN)
+        auto_sync.addAction(UI_10MIN)
+        auto_sync.addAction(UI_15MIN)
+        auto_sync.addAction(UI_30MIN)
+        auto_sync.addAction(UI_60MIN)
+        auto_sync.addAction(UI_NEVER)
+
+        # Task menu
+        task_menu = menu_bar.addMenu(UI_TASK)
+        task_menu.addAction(UI_SYNC_TASK)
+        task_menu.addAction(UI_SEND_TASK)
+
+        # Info menu
+        info_menu = menu_bar.addMenu(UI_INFO)
+        info_menu.addAction(UI_ABOUT)
+
+        help_action = QAction(UI_HELP, self)
+        info_menu.addAction(help_action)
+        help_action.triggered.connect(self.show_readme)
+
+    def show_readme(self):
+        self.readme_ui = ReadmeViewer()
+        self.readme_ui.show()
 
     def center(self):
         screen = QApplication.desktop().screenGeometry()
