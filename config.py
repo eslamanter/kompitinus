@@ -2,8 +2,8 @@ from constants import *
 
 # Configs
 
-db_path = {UI_MAIN: "Hytask.db",
-           UI_LOCAL: "Hytask.db"}
+db_path = {UI_MAIN: "HYtask.db",
+           UI_LOCAL: "HYtask.db"}
 
 user_attr = {DB_EMPLOYEE_ID: 101,
              DB_FIRST_NAME: "Eslam",

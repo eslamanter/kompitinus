@@ -1,16 +1,15 @@
 import sys
 import config
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QHBoxLayout,
-    QFrame, QTableView, QSplitter, QLineEdit, QTextEdit, QCheckBox,
-    QPushButton, QDateTimeEdit, QTreeView, QStatusBar, QMenu, QAction, QToolButton, QFileDialog)
+    QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QFrame, QTableView, QSplitter, QLineEdit,
+    QTextEdit, QCheckBox, QPushButton, QDateTimeEdit, QTreeView, QStatusBar, QMenu, QAction, QToolButton, QFileDialog)
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QDesktopServices
 from PyQt5.QtCore import Qt, QUrl
 from readme_ui import ReadmeViewer
 from constants import *
 
 def send_email(email_address):
-    mailto_link = f"mailto:{email_address}?subject=[{APP_NAME}_{config.DB_TASK_ID}] "
+    mailto_link = f"mailto:{email_address}?subject=[{APP_NAME}_{config.current_task[DB_TASK_ID]}] "
     QDesktopServices.openUrl(QUrl(mailto_link))
 
 
@@ -259,7 +258,7 @@ class MainWindow(QMainWindow):
 
     def delete_reference_link(self):
         deleted_text = self.reference_label.toolTip()
-        self.reference_label.setText("Reference:")
+        self.reference_label.setText(F"{UI_REFERENCE}:")
         self.reference_label.setToolTip("")
         if deleted_text:
             self.status_bar.showMessage(f"{UI_DELETED}: {deleted_text}")
