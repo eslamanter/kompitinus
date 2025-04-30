@@ -1,8 +1,9 @@
+from PyQt5.QtGui import QDesktopServices
 from PyQt5.QtWidgets import QApplication, QLabel, QVBoxLayout, QWidget
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QUrl
 import sys
-import config
-from about import *
+from about import APP_NAME, APP_VERSION, APP_PHASE, APP_ABOUT, APP_DISCLAIMER, APP_COPYRIGHT, DEV_EMAIL
+from utils import send_email
 
 
 class AboutUI(QWidget):
@@ -11,15 +12,18 @@ class AboutUI(QWidget):
         self.setWindowTitle('Info')
         self.setWindowFlags(Qt.SplashScreen | Qt.FramelessWindowHint)
 
-        label_title = QLabel(f'\n{APP_NAME}\nV.{APP_VERSION} {APP_PHASE}\n', self)
-        label_body = QLabel(f'\n{APP_ABOUT}\n\n{APP_DISCLAIMER}\n\n{APP_COPYRIGHT}\n\n{DEV_EMAIL}\n', self)
+        title_label = QLabel(f'\n{APP_NAME.upper()}\nV.{APP_VERSION} {APP_PHASE}\n', self)
+        body_label = QLabel(f'\n{APP_ABOUT}\n\n{APP_DISCLAIMER}\n\n{APP_COPYRIGHT}\n', self)
+        email_label = QLabel(f'<a href="#">{DEV_EMAIL}</a>')
+        email_label.linkActivated.connect(lambda: send_email())
 
-        label_body.setWordWrap(True)
-        label_title.setAlignment(Qt.AlignCenter)
+        body_label.setWordWrap(True)
+        title_label.setAlignment(Qt.AlignCenter)
 
         v_layout = QVBoxLayout()
-        v_layout.addWidget(label_title)
-        v_layout.addWidget(label_body)
+        v_layout.addWidget(title_label)
+        v_layout.addWidget(body_label)
+        v_layout.addWidget(email_label)
         self.setLayout(v_layout)
 
         self.adjustSize()

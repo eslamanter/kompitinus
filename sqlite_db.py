@@ -4,8 +4,8 @@ import config
 from constants import *
 
 def main_db_conncet():
-    if os.path.exists(config.db_path[UI_MAIN]):
-        conn = sqlite3.connect(config.db_path[UI_MAIN])
+    if os.path.exists(config.db_path[DB_MAIN_PATH]):
+        conn = sqlite3.connect(config.db_path[DB_MAIN_PATH])
         cursor = conn.cursor()
         print("Connected to the existing database successfully!")
 

@@ -1,10 +1,11 @@
 # Constants
 
-# App
-APP_NAME = "HYtask"
+# Config
+CONFIG_FILE = "config.json"
+DB_MAIN_PATH = "db_main_path"
+DB_LOCAL_PATH = "db_local_path"
 
 # Database
-
     # Employees
 DB_EMPLOYEE_ID = "employee_id"
 DB_FIRST_NAME = "first_name"
@@ -13,6 +14,7 @@ DB_EMAIL = "email"
 DB_PIN = "pin"
 DB_REGISTERED_AT = "registered_at"
 DB_ACTIVE = "active"
+DB_EMPLOYEE_ID_BASE = 100
 
     # Tasks
 DB_TASK_ID  = "task_id"
@@ -29,9 +31,9 @@ DB_STATUS = "status"
 DB_EXPECTED_AT = "expected_at"
 DB_REPLY = "reply"
 DB_ARCHIVED = "archived"
+DB_TASK_ID_BASE = 100000
 
 # UI Text
-
     # Menubar
 UI_CONFIG = "Config"
 UI_DATABASE = "Database"
@@ -93,3 +95,5 @@ UI_COPIED = "Copied"
 UI_PASTED = "Pasted"
 UI_DELETED = "Deleted"
 
+# Readme
+README_URL = "https://raw.githubusercontent.com/eslamanter/hy-task/main/README.md"

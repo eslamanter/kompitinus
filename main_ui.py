@@ -1,16 +1,13 @@
 import sys
-import config
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QFrame, QTableView, QSplitter, QLineEdit,
     QTextEdit, QCheckBox, QPushButton, QDateTimeEdit, QTreeView, QStatusBar, QMenu, QAction, QToolButton, QFileDialog)
-from PyQt5.QtGui import QStandardItemModel, QStandardItem, QDesktopServices
-from PyQt5.QtCore import Qt, QUrl
+from PyQt5.QtGui import QStandardItemModel, QStandardItem
+from PyQt5.QtCore import Qt
 from readme_ui import ReadmeViewer
 from constants import *
-
-def send_email(email_address):
-    mailto_link = f"mailto:{email_address}?subject=[{APP_NAME}_{config.current_task[DB_TASK_ID]}] "
-    QDesktopServices.openUrl(QUrl(mailto_link))
+from about import APP_NAME
+from utils import send_email
 
 
 class MainWindow(QMainWindow):
@@ -70,12 +67,12 @@ class MainWindow(QMainWindow):
         self.sender_label = QLabel(f"{UI_SENDER}:")
         self.sender_full_name = QLabel("John Doe")
         self.sender_email = QLabel(F'<a href="#">{"example@abc.xyz"}</a>')
-        self.sender_email.linkActivated.connect(lambda: send_email("")) #
+        self.sender_email.linkActivated.connect(lambda: send_email(email="", title=f"{APP_NAME}_{UI_TASK}_{100000}")) #
 
         self.receiver_label = QLabel(f"{UI_RECEIVER}:")
         self.receiver_full_name = QLabel("Jane Doe")
         self.receiver_email = QLabel(f'<a href="#">{"example@abc.xyz"}</a>')
-        self.receiver_email.linkActivated.connect(lambda: send_email("")) #
+        self.receiver_email.linkActivated.connect(lambda: send_email(email="", title=f"{APP_NAME}_{UI_TASK}_{100000}")) #
 
         right_meta_layout.addWidget(self.sender_label)
         right_meta_layout.addWidget(self.sender_full_name)

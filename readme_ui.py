@@ -3,11 +3,13 @@ import requests
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from markdown import markdown
+from constants import README_URL
+from about import APP_NAME
 
 class ReadmeViewer(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("README Viewer")
+        self.setWindowTitle(f"{APP_NAME} Readme")
 
         # Create a central widget and layout
         central_widget = QWidget()
@@ -25,9 +27,8 @@ class ReadmeViewer(QMainWindow):
         self.setCentralWidget(central_widget)
 
     def fetch_and_display_readme(self):
-        url = "https://raw.githubusercontent.com/eslamanter/hy-task/main/README.md"
         try:
-            response = requests.get(url)
+            response = requests.get(README_URL)
             response.raise_for_status()  # Raise an error for bad responses
             markdown_content = response.text
 
