@@ -16,6 +16,8 @@ def main_db_conncet():
     else:
         print("Error: Database does not exist!")
 
+def check_sqlite_db(db_path, ):
+
 
 if __name__ == "__main__":
     main_db_conncet()

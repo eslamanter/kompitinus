@@ -2,6 +2,8 @@ from about import APP_NAME
 
 # Config
 CONFIG_FILE = "config.json"
+DB_MAIN = "main"
+DB_LOCAL = "local"
 DB_MAIN_PATH = "db_main_path"
 DB_LOCAL_PATH = "db_local_path"
 
@@ -37,8 +39,8 @@ DB_TASK_ID_BASE = 100000
     # Menubar
 UI_CONFIG = "Config"
 UI_DATABASE = "Database"
-UI_MAIN = "Main"
-UI_LOCAL = "Local"
+UI_MAIN = DB_MAIN.capitalize()
+UI_LOCAL = DB_LOCAL.capitalize()
 UI_USER = "User"
 UI_EDIT = "Edit"
 UI_LOGOUT = "Logout"
@@ -77,7 +79,6 @@ UI_STARRED = "Starred"
 
 UI_REFERENCE = "Reference"
 UI_REFERENCE_OPEN = "Browse Folder"
-UI_REFERENCE_SELECT = "Select Folder"
 UI_REFERENCE_COPY = "Copy Link"
 UI_REFERENCE_PASTE = "Paste Link"
 UI_REFERENCE_DELETE = "Delete Link"
@@ -95,6 +96,12 @@ UI_SELECTED = "Selected"
 UI_COPIED = "Copied"
 UI_PASTED = "Pasted"
 UI_DELETED = "Deleted"
+
+# Messages
+MSG_SELECT_FOLDER = "Select Folder"
+MSG_SELECT_FILE = "Select File"
+MSG_CREATE_CONFIG = "User config not found. Do you want to create new config?"
+MSG_CREATE_DB = "Database not found. Do you want to create new database?"
 
 # Readme
 README_URL = f"https://raw.githubusercontent.com/eslamanter/{APP_NAME.lower()}/main/README.md"

@@ -8,7 +8,7 @@ from readme_ui import ReadmeViewer
 from about_ui import AboutScreen
 from constants import *
 from about import APP_NAME
-from utils import send_email
+from utils import send_email, select_folder_dialog
 
 
 class MainWindow(QMainWindow):
@@ -233,7 +233,7 @@ class MainWindow(QMainWindow):
         self.center()
 
     def open_folder_dialog(self):
-        folder_path = QFileDialog.getExistingDirectory(self, UI_REFERENCE_SELECT)
+        folder_path = select_folder_dialog(parent=self)
         self.reference_label.setText(f'<a href={folder_path}>{UI_REFERENCE}</a>')
         self.reference_label.setToolTip(folder_path)
         if folder_path:
