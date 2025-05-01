@@ -6,7 +6,7 @@ from about import APP_NAME, APP_VERSION, APP_PHASE, APP_ABOUT, APP_DISCLAIMER, A
 from utils import send_email
 
 
-class AboutUI(QWidget):
+class AboutScreen(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle('Info')
@@ -38,6 +38,6 @@ class AboutUI(QWidget):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    splash = AboutUI()
+    splash = AboutScreen()
     splash.show()
     sys.exit(app.exec_())

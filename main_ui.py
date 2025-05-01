@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtCore import Qt
 from readme_ui import ReadmeViewer
+from about_ui import AboutScreen
 from constants import *
 from about import APP_NAME
 from utils import send_email
@@ -295,13 +296,23 @@ class MainWindow(QMainWindow):
         task_menu.addAction(UI_SYNC_TASK)
         task_menu.addAction(UI_SEND_TASK)
 
+        # Export menu
+        export_menu = menu_bar.addMenu(UI_EXPORT)
+        export_menu.addAction(UI_MAIN)
+        export_menu.addAction(UI_LOCAL)
+
         # Info menu
         info_menu = menu_bar.addMenu(UI_INFO)
-        info_menu.addAction(UI_ABOUT)
-
+        about_action = QAction(UI_ABOUT, self)
+        info_menu.addAction(about_action)
+        about_action.triggered.connect(self.show_about)
         help_action = QAction(UI_HELP, self)
         info_menu.addAction(help_action)
         help_action.triggered.connect(self.show_readme)
+
+    def show_about(self):
+        self.about_ui = AboutScreen()
+        self.about_ui.show()
 
     def show_readme(self):
         self.readme_ui = ReadmeViewer()
@@ -313,8 +324,12 @@ class MainWindow(QMainWindow):
         self.move((screen.width() - size.width()) // 2, (screen.height() - size.height()) // 2)
 
 
-if __name__ == "__main__":
+def show_main_ui():
     app = QApplication(sys.argv)
     main_window = MainWindow()
     main_window.show()
     sys.exit(app.exec_())
+
+
+if __name__ == "__main__":
+    show_main_ui()

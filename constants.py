@@ -1,4 +1,4 @@
-# Constants
+from about import APP_NAME
 
 # Config
 CONFIG_FILE = "config.json"
@@ -54,6 +54,7 @@ UI_60MIN = "60 min"
 UI_NEVER = "Never"
 UI_SYNC_TASK = "Sync"
 UI_SEND_TASK = "Send"
+UI_EXPORT = "Export"
 UI_INFO = "Info"
 UI_ABOUT = "About"
 UI_HELP = "Help"
@@ -96,4 +97,4 @@ UI_PASTED = "Pasted"
 UI_DELETED = "Deleted"
 
 # Readme
-README_URL = "https://raw.githubusercontent.com/eslamanter/hy-task/main/README.md"
+README_URL = f"https://raw.githubusercontent.com/eslamanter/{APP_NAME.lower()}/main/README.md"
