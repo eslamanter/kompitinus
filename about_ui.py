@@ -1,8 +1,9 @@
-from PyQt5.QtGui import QDesktopServices
-from PyQt5.QtWidgets import QApplication, QLabel, QVBoxLayout, QWidget
-from PyQt5.QtCore import Qt, QUrl
+from PyQt5.QtWidgets import QApplication, QLabel, QVBoxLayout, QWidget, QPushButton
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QCursor
 import sys
 from about import APP_NAME, APP_VERSION, APP_PHASE, APP_ABOUT, APP_DISCLAIMER, APP_COPYRIGHT, DEV_EMAIL
+from constants import UI_CLOSE
 from utils import send_email
 
 
@@ -13,31 +14,32 @@ class AboutScreen(QWidget):
         self.setWindowFlags(Qt.SplashScreen | Qt.FramelessWindowHint)
 
         title_label = QLabel(f'\n{APP_NAME.upper()}\nV.{APP_VERSION} {APP_PHASE}\n', self)
+        title_label.setAlignment(Qt.AlignCenter)
+
         body_label = QLabel(f'\n{APP_ABOUT}\n\n{APP_DISCLAIMER}\n\n{APP_COPYRIGHT}\n', self)
+        body_label.setWordWrap(True)
+
         email_label = QLabel(f'<a href="#">{DEV_EMAIL}</a>')
         email_label.linkActivated.connect(lambda: send_email())
 
-        body_label.setWordWrap(True)
-        title_label.setAlignment(Qt.AlignCenter)
+        close_button = QPushButton(UI_CLOSE)
+        close_button.setStyleSheet("QPushButton { border: none; }")
+        close_button.setCursor(QCursor(Qt.PointingHandCursor))
+        close_button.clicked.connect(self.close)
 
-        v_layout = QVBoxLayout()
-        v_layout.addWidget(title_label)
-        v_layout.addWidget(body_label)
-        v_layout.addWidget(email_label)
-        self.setLayout(v_layout)
+        layout = QVBoxLayout()
+        layout.addWidget(title_label)
+        layout.addWidget(body_label)
+        layout.addWidget(email_label)
+        layout.addWidget(close_button, alignment=Qt.AlignRight)
 
+        self.setLayout(layout)
         self.adjustSize()
-        self.center()
         self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
-
-    def center(self):
-        screen = QApplication.desktop().screenGeometry()
-        size = self.geometry()
-        self.move((screen.width() - size.width()) // 2, (screen.height() - size.height()) // 2)
 
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    splash = AboutScreen()
-    splash.show()
+    splash_screen = AboutScreen()
+    splash_screen.show()
     sys.exit(app.exec_())

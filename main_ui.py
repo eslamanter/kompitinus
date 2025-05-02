@@ -8,7 +8,7 @@ from readme_ui import ReadmeViewer
 from about_ui import AboutScreen
 from constants import *
 from about import APP_NAME
-from utils import send_email, select_folder_dialog
+from utils import send_email, select_directory_dialog
 
 
 class MainWindow(QMainWindow):
@@ -138,15 +138,15 @@ class MainWindow(QMainWindow):
 
         # Create menu associated to menu button
         self.menu = QMenu(self)
-        open_folder_action = QAction(UI_REFERENCE_OPEN, self)
-        open_folder_action.triggered.connect(self.open_folder_dialog)
+        open_directory_action = QAction(UI_REFERENCE_OPEN, self)
+        open_directory_action.triggered.connect(self.open_directory_dialog)
         copy_link_action = QAction(UI_REFERENCE_COPY, self)
         copy_link_action.triggered.connect(self.copy_reference_link)
         paste_link_action = QAction(UI_REFERENCE_PASTE, self)
         paste_link_action.triggered.connect(self.paste_reference_link)
         delete_link_action = QAction(UI_REFERENCE_DELETE, self)
         delete_link_action.triggered.connect(self.delete_reference_link)
-        self.menu.addAction(open_folder_action)
+        self.menu.addAction(open_directory_action)
         self.menu.addAction(copy_link_action)
         self.menu.addAction(paste_link_action)
         self.menu.addAction(delete_link_action)
@@ -232,12 +232,12 @@ class MainWindow(QMainWindow):
         self.adjustSize()
         self.center()
 
-    def open_folder_dialog(self):
-        folder_path = select_folder_dialog(parent=self)
-        self.reference_label.setText(f'<a href={folder_path}>{UI_REFERENCE}</a>')
-        self.reference_label.setToolTip(folder_path)
-        if folder_path:
-            self.status_bar.showMessage(f"{UI_SELECTED}: {folder_path}")
+    def open_directory_dialog(self):
+        directory_path = select_directory_dialog(parent=self)
+        self.reference_label.setText(f'<a href={directory_path}>{UI_REFERENCE}</a>')
+        self.reference_label.setToolTip(directory_path)
+        if directory_path:
+            self.status_bar.showMessage(f"{UI_SELECTED}: {directory_path}")
 
     def copy_reference_link(self):
         copied_text = self.reference_label.toolTip()
@@ -325,11 +325,12 @@ class MainWindow(QMainWindow):
 
 
 def show_main_ui():
-    app = QApplication(sys.argv)
     main_window = MainWindow()
     main_window.show()
-    sys.exit(app.exec_())
 
 
 if __name__ == "__main__":
-    show_main_ui()
+    app = QApplication(sys.argv)
+    main_window_ = MainWindow()
+    main_window_.show()
+    sys.exit(app.exec())

@@ -1,5 +1,5 @@
 import os
-from PyQt5.QtWidgets import QApplication, QMessageBox, QFileDialog
+from PyQt5.QtWidgets import QMessageBox, QFileDialog
 from PyQt5.QtGui import QDesktopServices
 from PyQt5.QtCore import QUrl
 from about import DEV_EMAIL, APP_NAME, APP_VERSION
@@ -42,9 +42,13 @@ def warning_msg_box(warning, title=APP_NAME):
     msg_box.setStandardButtons(QMessageBox.Ok)
     msg_box.exec_()
 
-def select_folder_dialog(parent=None, title=MSG_SELECT_DIR, default_path=""):
-    folder_path = QFileDialog.getExistingDirectory(parent, title, default_path)
-    return folder_path
+def select_directory_dialog(parent=None, title=MSG_SELECT_DIR, default_path=""):
+    directory_path = QFileDialog.getExistingDirectory(parent, title, default_path)
+    return directory_path
+
+
+def get_basename(file_path):
+    return os.path.basename(file_path)
 
 
 def select_db_file_dialog(parent=None, title=MSG_SELECT_FILE, default_path=""):
@@ -52,9 +56,5 @@ def select_db_file_dialog(parent=None, title=MSG_SELECT_FILE, default_path=""):
     return file_path
 
 
-def join_paths(folder_path, file_name):
-    os.path.join(folder_path, file_name)
-
-
-# def get_documents_path():
-#     return join_paths(folder_path=os.path.expanduser("~"), file_name="Documents")
+def join_paths(directory_path, file_name):
+    return os.path.join(directory_path, file_name)

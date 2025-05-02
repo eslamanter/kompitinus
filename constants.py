@@ -102,15 +102,27 @@ UI_COPIED = "Copied"
 UI_PASTED = "Pasted"
 UI_DELETED = "Deleted"
 
+    # Config
+UI_DB_CONFIG = "DB Config"
+UI_DB_EXISTING = "Existing"
+UI_DB_NEW = "New"
+UI_CHECK = "Check"
+UI_SELECT_PATH = "Select Path"
+UI_USER_CONFIG = "User Configuration"
+
+    #About
+UI_CLOSE = "Close"
+
 # Messages
 MSG_SELECT_DIR = "Select Folder"
 MSG_SELECT_FILE = "Select File"
-MSG_NEW_CONFIG = "User config not found. Do you want to create new config?"
-MSG_INVALID_CONFIG = f"Invalid config data. Check {CONFIG_FILE}"
-MSG_EXISTS_DB_MAIN = "Do you want to connect to an existing main database?"
-MSG_NEW_DB_MAIN = "Do you want to create new main database?"
-MSG_EXISTS_DB_LOCAL = "Do you want to synchronize an existing local database?"
-MSG_NEW_DB_LOCAL = "Do you want to create new local database?"
+# MSG_NEW_CONFIG = "User config not found. Do you want to create new config?"
+# MSG_INVALID_CONFIG = f"Invalid config data. Check {CONFIG_FILE}"
+# MSG_INVALID_DB_NAME = "Invalid database name!"
+# MSG_EXISTS_DB_MAIN = "Do you want to connect to an existing main database?"
+# MSG_NEW_DB_MAIN = "Do you want to create new main database?"
+# MSG_EXISTS_DB_LOCAL = "Do you want to synchronize an existing local database?"
+# MSG_NEW_DB_LOCAL = "Do you want to create new local database?"
 
 # Readme
 README_URL = f"https://raw.githubusercontent.com/eslamanter/{APP_NAME.lower()}/main/README.md"
