@@ -18,8 +18,7 @@ from constants import DB_MAIN_PATH
 
 
 def check_sqlite_db():
-    if check_file_exists(config.config_data[DB_MAIN_PATH]):
-        pass
+    pass
 
 
 def connect_db_main():

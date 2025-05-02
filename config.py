@@ -1,6 +1,6 @@
-from constants import (DB_MAIN, DB_MAIN_PATH, DB_LOCAL, DB_LOCAL_PATH, DB_EMPLOYEE_ID, DB_EMPLOYEE_ID_BASE,
-                       DB_FIRST_NAME, DB_LAST_NAME, DB_EMAIL, DB_PIN, DB_MODIFIED_AT)
-from about import APP_NAME
+# from constants import (DB_MAIN_NAME, DB_MAIN_PATH, DB_LOCAL_NAME, DB_LOCAL_PATH, DB_EMPLOYEE_ID, DB_EMPLOYEE_ID_BASE,
+#                        DB_FIRST_NAME, DB_LAST_NAME, DB_EMAIL, DB_PIN, DB_MODIFIED_AT)
+# from about import APP_NAME
 
 
 # Default config data

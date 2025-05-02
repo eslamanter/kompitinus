@@ -16,51 +16,53 @@ def check_config_file():
     if check_file_exists(CONFIG_FILE):
         with open(CONFIG_FILE, "r") as file:
             json_data = json.load(file)
-            if check_config_data(json_data):
-                config.config_data = json_data
-                check_sqlite_db()
-            else:
-                warning_msg_box(MSG_INVALID_CONFIG) #
-                sys.exit() #
+
+        if check_config_data(json_data):
+            config.config_data = json_data
+            check_sqlite_db()
+        else:
+            warning_msg_box(MSG_INVALID_CONFIG) #
+            sys.exit() #
+
     else:
-        with open(CONFIG_FILE, "w") as file:
-            app = QApplication(sys.argv)
-            if question_msg_box(MSG_NEW_CONFIG):
+        app = QApplication(sys.argv)
+        if question_msg_box(MSG_NEW_CONFIG):
 
-                if question_msg_box(MSG_EXISTS_DB_MAIN):
-                    file_path = select_db_file_dialog(title=f"{MSG_SELECT_FILE} {DB_MAIN_NAME}")
-                    if file_path:
-                        config.config_data[DB_MAIN_PATH] = file_path
-                    else:
-                        sys.exit()
+            if question_msg_box(MSG_EXISTS_DB_MAIN):
+                file_path = select_db_file_dialog(title=f"{MSG_SELECT_FILE} {DB_MAIN_NAME}")
+                if file_path:
+                    config.config_data[DB_MAIN_PATH] = file_path
                 else:
-                    if question_msg_box(MSG_NEW_DB_MAIN):
-                        folder_path = select_folder_dialog(title=f"{MSG_SELECT_DIR} {DB_MAIN_NAME}")
-                        config.config_data[DB_MAIN_PATH] = join_paths(folder_path, DB_MAIN_NAME)
-                        create_db_main()
-                    else:
-                        sys.exit()
-
-                if question_msg_box(MSG_EXISTS_DB_LOCAL):
-                    file_path = select_db_file_dialog(title=f"{MSG_SELECT_FILE} {DB_LOCAL_NAME}")
-                    if file_path:
-                        config.config_data[DB_LOCAL_PATH] = file_path
-                    else:
-                        sys.exit()
-                else:
-                    if question_msg_box(MSG_NEW_DB_LOCAL):
-                        folder_path = select_folder_dialog(title=f"{MSG_SELECT_DIR} {DB_LOCAL_NAME}",
-                                                           default_path=DB_LOCAL_DEFAULT_DIR)
-                        config.config_data[DB_LOCAL_PATH] = join_paths(folder_path, DB_LOCAL_NAME)
-                        create_db_local()
-                    else:
-                        sys.exit()
-
-                user_function()
-                json.dump(config.config_data, file, indent=0)
-
+                    sys.exit()
             else:
-                sys.exit()
+                if question_msg_box(MSG_NEW_DB_MAIN):
+                    folder_path = select_folder_dialog(title=f"{MSG_SELECT_DIR} {DB_MAIN_NAME}")
+                    config.config_data[DB_MAIN_PATH] = join_paths(folder_path, DB_MAIN_NAME)
+                    create_db_main()
+                else:
+                    sys.exit()
+
+            if question_msg_box(MSG_EXISTS_DB_LOCAL):
+                file_path = select_db_file_dialog(title=f"{MSG_SELECT_FILE} {DB_LOCAL_NAME}")
+                if file_path:
+                    config.config_data[DB_LOCAL_PATH] = file_path
+                else:
+                    sys.exit()
+            else:
+                if question_msg_box(MSG_NEW_DB_LOCAL):
+                    folder_path = select_folder_dialog(title=f"{MSG_SELECT_DIR} {DB_LOCAL_NAME}",
+                                                       default_path=DB_LOCAL_DEFAULT_DIR)
+                    config.config_data[DB_LOCAL_PATH] = join_paths(folder_path, DB_LOCAL_NAME)
+                    create_db_local()
+                else:
+                    sys.exit()
+
+            user_function()
+        else:
+            sys.exit()
+
+        with open(CONFIG_FILE, "w") as file:
+            json.dump(config.config_data, file, indent=0)
 
 
 def check_config_data(data):
