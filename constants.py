@@ -2,12 +2,17 @@ from about import APP_NAME
 
 # Config
 CONFIG_FILE = "config.json"
-DB_MAIN = "main"
-DB_LOCAL = "local"
+MAIN = "main"
+LOCAL = "local"
+DB_MAIN_NAME = f"{APP_NAME.lower()}_{MAIN}.db"
+DB_LOCAL_NAME = f"{APP_NAME.lower()}_{LOCAL}.db"
+DB_LOCAL_DEFAULT_DIR = "C:/Users/Public/Documents"
+
+# Database
+    # Main and local db paths
 DB_MAIN_PATH = "db_main_path"
 DB_LOCAL_PATH = "db_local_path"
 
-# Database
     # Employees
 DB_EMPLOYEE_ID = "employee_id"
 DB_FIRST_NAME = "first_name"
@@ -39,8 +44,8 @@ DB_TASK_ID_BASE = 100000
     # Menubar
 UI_CONFIG = "Config"
 UI_DATABASE = "Database"
-UI_MAIN = DB_MAIN.capitalize()
-UI_LOCAL = DB_LOCAL.capitalize()
+UI_MAIN = MAIN.capitalize()
+UI_LOCAL = LOCAL.capitalize()
 UI_USER = "User"
 UI_EDIT = "Edit"
 UI_LOGOUT = "Logout"
@@ -98,10 +103,14 @@ UI_PASTED = "Pasted"
 UI_DELETED = "Deleted"
 
 # Messages
-MSG_SELECT_FOLDER = "Select Folder"
+MSG_SELECT_DIR = "Select Folder"
 MSG_SELECT_FILE = "Select File"
-MSG_CREATE_CONFIG = "User config not found. Do you want to create new config?"
-MSG_CREATE_DB = "Database not found. Do you want to create new database?"
+MSG_NEW_CONFIG = "User config not found. Do you want to create new config?"
+MSG_INVALID_CONFIG = f"Invalid config data. Check {CONFIG_FILE}"
+MSG_EXISTS_DB_MAIN = "Do you want to connect to an existing main database?"
+MSG_NEW_DB_MAIN = "Do you want to create new main database?"
+MSG_EXISTS_DB_LOCAL = "Do you want to synchronize an existing local database?"
+MSG_NEW_DB_LOCAL = "Do you want to create new local database?"
 
 # Readme
 README_URL = f"https://raw.githubusercontent.com/eslamanter/{APP_NAME.lower()}/main/README.md"

@@ -4,6 +4,9 @@ from about import APP_NAME
 
 
 # Default config data
+config_data = {}
+
+'''
 config_data = {
     DB_MAIN_PATH: f"{APP_NAME.lower()}_{DB_MAIN.lower()}.db",
     DB_LOCAL_PATH: f"{APP_NAME.lower()}_{DB_LOCAL.lower()}.db",
@@ -14,3 +17,4 @@ config_data = {
     DB_PIN: DB_PIN,
     DB_MODIFIED_AT: ""
 }
+'''
