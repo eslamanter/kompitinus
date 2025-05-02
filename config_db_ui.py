@@ -4,10 +4,13 @@ from PyQt5.QtWidgets import (
     QGroupBox, QHBoxLayout, QRadioButton, QToolButton, QFrame, QMenu, QAction)
 from PyQt5.QtCore import Qt
 from about import APP_NAME
+from config_user_ui import show_config_user_ui
 from constants import (UI_DB_CONFIG, UI_DB_EXISTING, UI_DB_NEW, DB_MAIN_NAME, DB_LOCAL_NAME,
                        UI_CHECK, DB_LOCAL_DEFAULT_DIR, UI_SELECT_PATH, MSG_SELECT_FILE,
-                       MAIN, LOCAL, MSG_SELECT_DIR)
-from utils import select_db_file_dialog, select_directory_dialog, join_paths, get_basename, warning_msg_box
+                       MAIN, LOCAL, MSG_SELECT_DIR, DB_MAIN_PATH, DB_LOCAL_PATH)
+from utils import (select_db_file_dialog, select_directory_dialog, join_paths, get_basename, check_file_exists,
+                   playsound_hand, playsound_exclamation)
+import config
 
 
 class DBConfigDialog(QDialog):
@@ -68,7 +71,8 @@ class DBConfigDialog(QDialog):
 
         local_db_path_layout = QHBoxLayout()
         self.local_db_path = QLineEdit()
-        self.local_db_path.setText(join_paths(directory_path=DB_LOCAL_DEFAULT_DIR, file_name=DB_LOCAL_NAME))
+        if check_file_exists(DB_LOCAL_DEFAULT_DIR):
+            self.local_db_path.setText(join_paths(directory_path=DB_LOCAL_DEFAULT_DIR, file_name=DB_LOCAL_NAME))
         self.local_db_path.setReadOnly(True)
         self.local_db_menu_button = QToolButton(self)
         self.local_db_menu_button.setText("... ")
@@ -124,10 +128,21 @@ class DBConfigDialog(QDialog):
                     self.local_db_path.setText(join_paths(directory_path=directory_path, file_name=DB_LOCAL_NAME))
 
     def check_db_config(self):
-        self.accept()
+        main_db_path = self.main_db_path.text()
+        local_db_path = self.local_db_path.text()
+        if main_db_path and local_db_path:
+            config.data[DB_MAIN_PATH] = main_db_path
+            config.data[DB_LOCAL_PATH] = local_db_path
+            self.accept()
+
+            show_config_user_ui()
+
+        else:
+            playsound_hand()
 
 
 def show_config_db_ui():
+    playsound_exclamation()
     config_dialog = DBConfigDialog()
     config_dialog.show()
 

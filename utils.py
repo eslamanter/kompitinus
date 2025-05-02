@@ -1,9 +1,22 @@
+import json
 import os
 from PyQt5.QtWidgets import QMessageBox, QFileDialog
 from PyQt5.QtGui import QDesktopServices
 from PyQt5.QtCore import QUrl
 from about import DEV_EMAIL, APP_NAME, APP_VERSION
-from constants import MSG_SELECT_DIR, MSG_SELECT_FILE
+from constants import MSG_SELECT_DIR, MSG_SELECT_FILE, CONFIG_FILE
+import winsound
+import config
+
+
+def read_config_from_json():
+    with open(CONFIG_FILE, "r") as file:
+        return json.load(file)
+
+
+def write_config_to_json():
+    with open(CONFIG_FILE, "w") as file:
+        json.dump(config.data, file, indent=0)
 
 
 def check_file_exists(file_path):
@@ -57,4 +70,12 @@ def select_db_file_dialog(parent=None, title=MSG_SELECT_FILE, default_path=""):
 
 
 def join_paths(directory_path, file_name):
-    return os.path.join(directory_path, file_name)
+    return os.path.normpath(os.path.join(directory_path, file_name))
+
+
+def playsound_hand():
+    winsound.MessageBeep(winsound.MB_ICONHAND)
+
+
+def playsound_exclamation():
+    winsound.MessageBeep(winsound.MB_ICONEXCLAMATION)
