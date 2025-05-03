@@ -203,7 +203,7 @@ class MainWindow(QMainWindow):
 
         # Add update task button
         self.update_button_layout = QHBoxLayout()
-        self.update_button = QPushButton(UI_UPDATE_TASK)
+        self.update_button = QPushButton(UI_UPDATE)
         self.update_button.setCursor(QCursor(Qt.PointingHandCursor))
         self.update_button_layout.addWidget(self.update_button)
         main_vertical_layout.addLayout(self.update_button_layout)

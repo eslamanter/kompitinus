@@ -96,7 +96,7 @@ UI_DAYS = "Days"
 UI_REPLY = "Reply"
 UI_DONE = "Done"
 UI_ARCHIVED = "Archive"
-UI_UPDATE_TASK = "Update Task"
+UI_UPDATE = "Update"
 
     # Statusbar
 UI_SELECTED = "Selected"
@@ -116,6 +116,10 @@ UI_PIN = "Pin"
 UI_LOGIN = "Login"
 UI_SIGNUP = "Sign Up"
 
+    # User
+UI_FIRST_NAME = "First name"
+UI_LAST_NAME = "Last name"
+
     # About
 UI_CLOSE = "Close"
 
@@ -123,6 +127,7 @@ UI_CLOSE = "Close"
 MSG_SELECT_DIR = "Select Folder"
 MSG_SELECT_FILE = "Select File"
 MSG_DB_MAIN_NOT_FOUND = f"Inaccessible {DB_MAIN_NAME}. Do you want to continue?"
+
 # MSG_NEW_CONFIG = "User config not found. Do you want to create new config?"
 # MSG_INVALID_CONFIG = f"Invalid config data. Check {CONFIG_FILE}"
 # MSG_INVALID_DB_NAME = "Invalid database name!"
@@ -131,5 +136,5 @@ MSG_DB_MAIN_NOT_FOUND = f"Inaccessible {DB_MAIN_NAME}. Do you want to continue?"
 # MSG_EXISTS_DB_LOCAL = "Do you want to synchronize an existing local database?"
 # MSG_NEW_DB_LOCAL = "Do you want to create new local database?"
 
-# Readme
+# Help
 README_URL = f"https://raw.githubusercontent.com/eslamanter/{APP_NAME.lower()}/main/README.md"

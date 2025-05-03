@@ -1,17 +1,11 @@
 import sys
-from PyQt5.QtGui import QCursor
-from PyQt5.QtWidgets import (
-    QApplication, QDialog, QLineEdit, QPushButton, QVBoxLayout, QLabel,
-    QGroupBox, QHBoxLayout, QRadioButton, QToolButton, QFrame, QMenu, QAction)
+from PyQt5.QtGui import QCursor, QIntValidator
+from PyQt5.QtWidgets import (QApplication, QDialog, QLineEdit, QPushButton, QVBoxLayout, QLabel, QGroupBox,
+                             QHBoxLayout, QFrame)
 from PyQt5.QtCore import Qt
 from about import APP_NAME
-from constants import (UI_DB_EXISTING, UI_DB_NEW, DB_MAIN_NAME, DB_LOCAL_NAME,
-                       UI_CONNECT, DB_LOCAL_DEFAULT_DIR, UI_SELECT_PATH, MSG_SELECT_FILE,
-                       MAIN, LOCAL, MSG_SELECT_DIR, UI_EMAIL, UI_LOGIN, UI_SIGNUP, UI_PIN)
-from sqlite_db import create_main_db, create_local_db
-from utils import (select_db_file_dialog, select_directory_dialog, join_paths, get_basename, get_directory,
-                   file_exists, playsound_hand, write_config_to_json, playsound_ok)
-import config
+from constants import UI_EMAIL, UI_LOGIN, UI_SIGNUP, UI_PIN
+from utils import playsound_ok
 
 
 class AuthnDialog(QDialog):
@@ -32,6 +26,8 @@ class AuthnDialog(QDialog):
 
         self.pin_label = QLabel(f"{UI_PIN}:")
         self.pin_input = QLineEdit()
+        self.pin_input.setValidator((QIntValidator(0, 9999, self)))
+        self.pin_input.setMaxLength(4)
 
         authn_layout = QVBoxLayout()
         authn_layout.addWidget(self.email_label)
