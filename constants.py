@@ -9,9 +9,6 @@ DB_LOCAL_NAME = f"{APP_NAME.lower()}_{LOCAL}.db"
 DB_LOCAL_DEFAULT_DIR = "C:/Users/Public/Documents"
 
 # Database
-    # Main and local db paths
-DB_MAIN_PATH = "db_main_path"
-DB_LOCAL_PATH = "db_local_path"
 
     # Employees
 DB_EMPLOYEES_TABLE = "employees"
@@ -108,15 +105,16 @@ UI_PASTED = "Pasted"
 UI_DELETED = "Deleted"
 
     # Config
-        # Database
-UI_DB_CONFIG = "DB Config"
 UI_DB_EXISTING = "Existing"
 UI_DB_NEW = "New"
-UI_CHECK = "Check"
+UI_CONNECT = "Connect"
 UI_SELECT_PATH = "Select Path"
 
-        # User
-UI_USER_CONFIG = "User Configuration"
+    # Authn
+UI_EMAIL = "Email"
+UI_PIN = "Pin"
+UI_LOGIN = "Login"
+UI_SIGNUP = "Sign Up"
 
     # About
 UI_CLOSE = "Close"
@@ -124,6 +122,7 @@ UI_CLOSE = "Close"
 # Messages
 MSG_SELECT_DIR = "Select Folder"
 MSG_SELECT_FILE = "Select File"
+MSG_DB_MAIN_NOT_FOUND = f"Inaccessible {DB_MAIN_NAME}. Do you want to continue?"
 # MSG_NEW_CONFIG = "User config not found. Do you want to create new config?"
 # MSG_INVALID_CONFIG = f"Invalid config data. Check {CONFIG_FILE}"
 # MSG_INVALID_DB_NAME = "Invalid database name!"

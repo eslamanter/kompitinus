@@ -16,7 +16,7 @@ def read_config_from_json():
 
 def write_config_to_json():
     with open(CONFIG_FILE, "w") as file:
-        json.dump(config.data, file, indent=0)
+        json.dump(config.path, file, indent=0)
 
 
 def file_exists(file_path):
@@ -83,3 +83,7 @@ def playsound_hand():
 
 def playsound_exclamation():
     winsound.MessageBeep(winsound.MB_ICONEXCLAMATION)
+
+
+def playsound_ok():
+    winsound.MessageBeep(winsound.MB_OK)

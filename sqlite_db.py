@@ -1,11 +1,11 @@
 import sqlite3
 import config
 from utils import file_exists
-from constants import (DB_MAIN_PATH, DB_LOCAL_PATH, DB_EMPLOYEES_ID_BASE, DB_EMPLOYEES_TABLE, DB_EMPLOYEE_ID,
+from constants import (MAIN, LOCAL, DB_EMPLOYEES_ID_BASE, DB_EMPLOYEES_TABLE, DB_EMPLOYEE_ID,
                        DB_FIRST_NAME, DB_LAST_NAME, DB_EMAIL, DB_PIN, DB_REGISTERED_AT, DB_ACTIVE, DB_TASKS_ID_BASE,
                        DB_TASKS_TABLE, DB_TASK_ID, DB_SENDER_ID, DB_RECEIVER_ID, DB_CREATED_AT, DB_MODIFIED_AT,
                        DB_TITLE, DB_BODY, DB_REFERENCE, DB_DUE_AT, DB_STARRED, DB_STATUS, DB_EXPECTED_AT, DB_REPLY,
-                       DB_ARCHIVED, MAIN, DB_LOCAL_TABLE, DB_SYNC_AT)
+                       DB_ARCHIVED, DB_LOCAL_TABLE, DB_SYNC_AT)
 
 
 # def main_db_conncet():
@@ -23,10 +23,10 @@ from constants import (DB_MAIN_PATH, DB_LOCAL_PATH, DB_EMPLOYEES_ID_BASE, DB_EMP
 
 
 def create_main_db():
-    if not file_exists(config.data[DB_MAIN_PATH]):
+    if not file_exists(config.path[MAIN]):
 
         # Create and connect to SQLite database
-        conn = sqlite3.connect(config.data[DB_MAIN_PATH])
+        conn = sqlite3.connect(config.path[MAIN])
         cursor = conn.cursor()
 
         # Create employees table
@@ -87,22 +87,22 @@ def create_main_db():
 
 
 def create_local_db():
-    if not file_exists(config.data[DB_LOCAL_PATH]):
-        config.data[DB_EMPLOYEE_ID] = 101 # To delete
+    if not file_exists(config.path[LOCAL]):
+        config.path[DB_EMPLOYEE_ID] = 101 # To delete
 
         # Create and connect to SQLite database
-        conn = sqlite3.connect(config.data[DB_LOCAL_PATH])
+        conn = sqlite3.connect(config.path[LOCAL])
         cursor = conn.cursor()
 
         # Attach the new database
-        cursor.execute(f"ATTACH DATABASE '{config.data[DB_MAIN_PATH]}' AS {MAIN}_db")
+        cursor.execute(f"ATTACH DATABASE '{config.path[MAIN]}' AS {MAIN}_db")
 
         # Copy the filtered rows
         cursor.execute(f"""
             CREATE TABLE {DB_TASKS_TABLE} AS
             SELECT * FROM {MAIN}_db.{DB_TASKS_TABLE}
             WHERE {DB_SENDER_ID} = ? OR {DB_RECEIVER_ID} = ?;
-        """, (config.data[DB_EMPLOYEE_ID], config.data[DB_EMPLOYEE_ID]))
+        """, (config.path[DB_EMPLOYEE_ID], config.path[DB_EMPLOYEE_ID]))
 
         cursor.execute(f"""
         CREATE TABLE {DB_LOCAL_TABLE} (
@@ -113,7 +113,7 @@ def create_local_db():
 
         cursor.execute(
             f"INSERT INTO {DB_LOCAL_TABLE} ({DB_EMPLOYEE_ID}) VALUES (?)",
-            (config.data[DB_EMPLOYEE_ID],)
+            (config.path[DB_EMPLOYEE_ID],)
         )
 
         # Commit and close connection

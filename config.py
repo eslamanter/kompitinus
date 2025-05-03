@@ -1,2 +1,3 @@
-# Default config data
-data = {}
+# Config data
+path = {}
+current = {}

@@ -2,14 +2,14 @@ import sys
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QFrame, QTableView, QSplitter, QLineEdit,
     QTextEdit, QCheckBox, QPushButton, QDateTimeEdit, QTreeView, QStatusBar, QMenu, QAction, QToolButton, QFileDialog)
-from PyQt5.QtGui import QStandardItemModel, QStandardItem
+from PyQt5.QtGui import QStandardItemModel, QStandardItem, QCursor
 from PyQt5.QtCore import Qt
 from readme_ui import ReadmeViewer
 from about_ui import AboutScreen
 from constants import *
 from about import APP_NAME
-from utils import send_email, select_directory_dialog
-
+from utils import send_email, select_directory_dialog, get_directory
+import config
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -204,6 +204,7 @@ class MainWindow(QMainWindow):
         # Add update task button
         self.update_button_layout = QHBoxLayout()
         self.update_button = QPushButton(UI_UPDATE_TASK)
+        self.update_button.setCursor(QCursor(Qt.PointingHandCursor))
         self.update_button_layout.addWidget(self.update_button)
         main_vertical_layout.addLayout(self.update_button_layout)
 
@@ -233,7 +234,7 @@ class MainWindow(QMainWindow):
         self.center()
 
     def open_directory_dialog(self):
-        directory_path = select_directory_dialog(parent=self)
+        directory_path = select_directory_dialog(parent=self, default_dir=get_directory(config.path[MAIN]))
         self.reference_label.setText(f'<a href={directory_path}>{UI_REFERENCE}</a>')
         self.reference_label.setToolTip(directory_path)
         if directory_path:

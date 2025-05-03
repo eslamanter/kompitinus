@@ -1,52 +1,44 @@
+import sys
 import config
-from utils import file_exists, get_basename, read_config_from_json, write_config_to_json
-from config_db_ui import show_config_db_ui
-from constants import (CONFIG_FILE, DB_MAIN_PATH, DB_LOCAL_PATH, DB_MAIN_NAME, DB_LOCAL_NAME,
-                       DB_EMPLOYEE_ID, DB_FIRST_NAME, DB_LAST_NAME, DB_EMAIL, DB_PIN)
+from utils import file_exists, get_basename, read_config_from_json, question_msg_box
+from config_ui import show_config_ui
+from constants import MAIN, LOCAL, CONFIG_FILE, DB_MAIN_NAME, DB_LOCAL_NAME, MSG_DB_MAIN_NOT_FOUND
 
 
 # Check if config file exists, load it & validate it, if not, create it
 def check_config():
     if file_exists(CONFIG_FILE):
-        json_data = read_config_from_json()
-        if validate_config_data(json_data):
-            config.data = json_data
+        path = read_config_from_json()
+        if validate(path):
+            config.path = path
         else:
             reset_config()
     else:
         reset_config()
 
 
-def validate_config_data(config_data):
-    config_keys = (DB_MAIN_PATH,
-                   DB_LOCAL_PATH,
-                   DB_EMPLOYEE_ID,
-                   DB_FIRST_NAME,
-                   DB_LAST_NAME,
-                   DB_EMAIL,
-                   DB_PIN)
-    for key in config_keys:
-        if key not in config_data:
-            return False
-    if file_exists(config_data[DB_MAIN_PATH]):
-        if get_basename(config_data[DB_MAIN_PATH]) != DB_MAIN_NAME:
-            return False
+def validate(path):
+    if MAIN not in path or LOCAL not in path:
+        return False
+    if get_basename(path[MAIN]) == DB_MAIN_NAME:
+        if not file_exists(path[MAIN]):
+            response = question_msg_box(question=MSG_DB_MAIN_NOT_FOUND)
+            if not response:
+                sys.exit()
     else:
         return False
-    if file_exists(config_data[DB_LOCAL_PATH]):
-        if get_basename(config_data[DB_LOCAL_PATH]) != DB_LOCAL_NAME:
+    if get_basename(path[LOCAL]) == DB_LOCAL_NAME:
+        if not file_exists(path[LOCAL]):
             return False
     else:
-        return False
-    if not config_data[DB_EMPLOYEE_ID].isdigit():
         return False
     return True
 
 
 def reset_config():
-    show_config_db_ui()
+    show_config_ui()
 
 
 if __name__ == "__main__":
     check_config()
-    print(config.data)
+    print(config.path)

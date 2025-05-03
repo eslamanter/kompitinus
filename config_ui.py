@@ -1,24 +1,25 @@
 import sys
+from PyQt5.QtGui import QCursor
 from PyQt5.QtWidgets import (
     QApplication, QDialog, QLineEdit, QPushButton, QVBoxLayout,
     QGroupBox, QHBoxLayout, QRadioButton, QToolButton, QFrame, QMenu, QAction)
 from PyQt5.QtCore import Qt
 from about import APP_NAME
-from config_user_ui import show_config_user_ui
-from constants import (UI_DB_CONFIG, UI_DB_EXISTING, UI_DB_NEW, DB_MAIN_NAME, DB_LOCAL_NAME,
-                       UI_CHECK, DB_LOCAL_DEFAULT_DIR, UI_SELECT_PATH, MSG_SELECT_FILE,
-                       MAIN, LOCAL, MSG_SELECT_DIR, DB_MAIN_PATH, DB_LOCAL_PATH)
+from authn_ui import show_authn_ui
+from constants import (UI_DB_EXISTING, UI_DB_NEW, DB_MAIN_NAME, DB_LOCAL_NAME,
+                       UI_CONNECT, DB_LOCAL_DEFAULT_DIR, UI_SELECT_PATH, MSG_SELECT_FILE,
+                       MAIN, LOCAL, MSG_SELECT_DIR)
 from sqlite_db import create_main_db, create_local_db
 from utils import (select_db_file_dialog, select_directory_dialog, join_paths, get_basename, get_directory,
-                   file_exists, playsound_hand, playsound_exclamation)
+                   file_exists, playsound_hand, playsound_exclamation, write_config_to_json)
 import config
 
 
-class DBConfigDialog(QDialog):
+class ConfigDialog(QDialog):
     def __init__(self):
         super().__init__()
 
-        self.setWindowTitle(f"{APP_NAME} - {UI_DB_CONFIG}")
+        self.setWindowTitle(APP_NAME)
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self.setModal(True)
 
@@ -99,9 +100,10 @@ class DBConfigDialog(QDialog):
         layout.addWidget(horizontal_line)
 
         # Connect Button
-        self.check_button = QPushButton(UI_CHECK)
-        self.check_button.clicked.connect(self.check_db_config)
-        layout.addWidget(self.check_button)
+        self.connect_button = QPushButton(UI_CONNECT)
+        self.connect_button.setCursor(QCursor(Qt.PointingHandCursor))
+        self.connect_button.clicked.connect(self.check_db_config)
+        layout.addWidget(self.connect_button)
 
         self.setLayout(layout)
         self.adjustSize()
@@ -140,11 +142,12 @@ class DBConfigDialog(QDialog):
         main_db_path = self.main_db_path.text()
         local_db_path = self.local_db_path.text()
         if main_db_path and local_db_path:
-            config.data[DB_MAIN_PATH] = main_db_path
-            config.data[DB_LOCAL_PATH] = local_db_path
+            config.path[MAIN] = main_db_path
+            config.path[LOCAL] = local_db_path
+            write_config_to_json()
             self.accept()
 
-            show_config_user_ui()
+            show_authn_ui()
 
             create_main_db() # To delete
             create_local_db() # To delete
@@ -152,14 +155,14 @@ class DBConfigDialog(QDialog):
             playsound_hand()
 
 
-def show_config_db_ui():
+def show_config_ui():
     playsound_exclamation()
-    config_dialog = DBConfigDialog()
+    config_dialog = ConfigDialog()
     config_dialog.show()
 
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    config_dialog_ = DBConfigDialog()
+    config_dialog_ = ConfigDialog()
     config_dialog_.show()
     sys.exit(app.exec())
