@@ -14,6 +14,7 @@ DB_MAIN_PATH = "db_main_path"
 DB_LOCAL_PATH = "db_local_path"
 
     # Employees
+DB_EMPLOYEES_TABLE = "employees"
 DB_EMPLOYEE_ID = "employee_id"
 DB_FIRST_NAME = "first_name"
 DB_LAST_NAME = "last_name"
@@ -21,9 +22,13 @@ DB_EMAIL = "email"
 DB_PIN = "pin"
 DB_REGISTERED_AT = "registered_at"
 DB_ACTIVE = "active"
-DB_EMPLOYEE_ID_BASE = 100
+DB_EMPLOYEES_ID_BASE = 100
+
+DB_LOCAL_TABLE = LOCAL
+DB_SYNC_AT = "sync_at"
 
     # Tasks
+DB_TASKS_TABLE = "tasks"
 DB_TASK_ID  = "task_id"
 DB_SENDER_ID = "sender_id"
 DB_RECEIVER_ID = "receiver_id"
@@ -38,7 +43,7 @@ DB_STATUS = "status"
 DB_EXPECTED_AT = "expected_at"
 DB_REPLY = "reply"
 DB_ARCHIVED = "archived"
-DB_TASK_ID_BASE = 100000
+DB_TASKS_ID_BASE = 100000
 
 # UI Text
     # Menubar
@@ -103,14 +108,17 @@ UI_PASTED = "Pasted"
 UI_DELETED = "Deleted"
 
     # Config
+        # Database
 UI_DB_CONFIG = "DB Config"
 UI_DB_EXISTING = "Existing"
 UI_DB_NEW = "New"
 UI_CHECK = "Check"
 UI_SELECT_PATH = "Select Path"
+
+        # User
 UI_USER_CONFIG = "User Configuration"
 
-    #About
+    # About
 UI_CLOSE = "Close"
 
 # Messages

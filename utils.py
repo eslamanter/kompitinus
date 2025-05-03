@@ -19,7 +19,7 @@ def write_config_to_json():
         json.dump(config.data, file, indent=0)
 
 
-def check_file_exists(file_path):
+def file_exists(file_path):
     return os.path.exists(file_path)
 
 
@@ -55,22 +55,26 @@ def warning_msg_box(warning, title=APP_NAME):
     msg_box.setStandardButtons(QMessageBox.Ok)
     msg_box.exec_()
 
-def select_directory_dialog(parent=None, title=MSG_SELECT_DIR, default_path=""):
-    directory_path = QFileDialog.getExistingDirectory(parent, title, default_path)
-    return directory_path
-
-
 def get_basename(file_path):
     return os.path.basename(file_path)
 
 
-def select_db_file_dialog(parent=None, title=MSG_SELECT_FILE, default_path=""):
-    file_path, _ = QFileDialog.getOpenFileName(parent, title, default_path, "Database Files (*.db)")
+def get_directory(file_path):
+    return os.path.dirname(file_path)
+
+
+def select_directory_dialog(parent=None, title=MSG_SELECT_DIR, default_dir=""):
+    directory_path = QFileDialog.getExistingDirectory(parent, title, default_dir)
+    return directory_path
+
+
+def select_db_file_dialog(parent=None, title=MSG_SELECT_FILE, default_dir=""):
+    file_path, _ = QFileDialog.getOpenFileName(parent, title, default_dir, "Database Files (*.db)")
     return file_path
 
 
-def join_paths(directory_path, file_name):
-    return os.path.normpath(os.path.join(directory_path, file_name))
+def join_paths(directory, file_name):
+    return os.path.normpath(os.path.join(directory, file_name))
 
 
 def playsound_hand():

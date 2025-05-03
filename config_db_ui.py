@@ -8,8 +8,9 @@ from config_user_ui import show_config_user_ui
 from constants import (UI_DB_CONFIG, UI_DB_EXISTING, UI_DB_NEW, DB_MAIN_NAME, DB_LOCAL_NAME,
                        UI_CHECK, DB_LOCAL_DEFAULT_DIR, UI_SELECT_PATH, MSG_SELECT_FILE,
                        MAIN, LOCAL, MSG_SELECT_DIR, DB_MAIN_PATH, DB_LOCAL_PATH)
-from utils import (select_db_file_dialog, select_directory_dialog, join_paths, get_basename, check_file_exists,
-                   playsound_hand, playsound_exclamation)
+from sqlite_db import create_main_db, create_local_db
+from utils import (select_db_file_dialog, select_directory_dialog, join_paths, get_basename, get_directory,
+                   file_exists, playsound_hand, playsound_exclamation)
 import config
 
 
@@ -71,8 +72,8 @@ class DBConfigDialog(QDialog):
 
         local_db_path_layout = QHBoxLayout()
         self.local_db_path = QLineEdit()
-        if check_file_exists(DB_LOCAL_DEFAULT_DIR):
-            self.local_db_path.setText(join_paths(directory_path=DB_LOCAL_DEFAULT_DIR, file_name=DB_LOCAL_NAME))
+        if file_exists(DB_LOCAL_DEFAULT_DIR):
+            self.local_db_path.setText(join_paths(directory=DB_LOCAL_DEFAULT_DIR, file_name=DB_LOCAL_NAME))
         self.local_db_path.setReadOnly(True)
         self.local_db_menu_button = QToolButton(self)
         self.local_db_menu_button.setText("... ")
@@ -108,24 +109,32 @@ class DBConfigDialog(QDialog):
     def select_db_path(self, db):
         if db == MAIN:
             if self.main_db_existing.isChecked():
-                file_path = select_db_file_dialog(parent=self, title=f"{MSG_SELECT_FILE} {DB_MAIN_NAME}")
+                file_path = select_db_file_dialog(parent=self,
+                                                  title=f"{MSG_SELECT_FILE} {DB_MAIN_NAME}",
+                                                  default_dir=get_directory(self.main_db_path.text()))
                 if file_path:
                     if get_basename(file_path) == DB_MAIN_NAME:
                         self.main_db_path.setText(file_path)
             else:
-                directory_path = select_directory_dialog(parent=self, title=f"{MSG_SELECT_DIR} {DB_MAIN_NAME}")
+                directory_path = select_directory_dialog(parent=self,
+                                                         title=f"{MSG_SELECT_DIR} {DB_MAIN_NAME}",
+                                                         default_dir=get_directory(self.main_db_path.text()))
                 if directory_path:
-                    self.main_db_path.setText(join_paths(directory_path=directory_path, file_name=DB_MAIN_NAME))
+                    self.main_db_path.setText(join_paths(directory=directory_path, file_name=DB_MAIN_NAME))
         else:
             if self.local_db_existing.isChecked():
-                file_path = select_db_file_dialog(parent=self, title=f"{MSG_SELECT_FILE} {DB_LOCAL_NAME}")
+                file_path = select_db_file_dialog(parent=self,
+                                                  title=f"{MSG_SELECT_FILE} {DB_LOCAL_NAME}",
+                                                  default_dir=get_directory(self.local_db_path.text()))
                 if file_path:
                     if get_basename(file_path) == DB_LOCAL_NAME:
                         self.local_db_path.setText(file_path)
             else:
-                directory_path = select_directory_dialog(parent=self, title=f"{MSG_SELECT_DIR} {DB_LOCAL_NAME}")
+                directory_path = select_directory_dialog(parent=self,
+                                                         title=f"{MSG_SELECT_DIR} {DB_LOCAL_NAME}",
+                                                         default_dir=get_directory(self.local_db_path.text()))
                 if directory_path:
-                    self.local_db_path.setText(join_paths(directory_path=directory_path, file_name=DB_LOCAL_NAME))
+                    self.local_db_path.setText(join_paths(directory=directory_path, file_name=DB_LOCAL_NAME))
 
     def check_db_config(self):
         main_db_path = self.main_db_path.text()
@@ -137,6 +146,8 @@ class DBConfigDialog(QDialog):
 
             show_config_user_ui()
 
+            create_main_db() # To delete
+            create_local_db() # To delete
         else:
             playsound_hand()
 
