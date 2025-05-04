@@ -6,7 +6,7 @@ MAIN = "main"
 LOCAL = "local"
 DB_MAIN_NAME = f"{APP_NAME.lower()}_{MAIN}.db"
 DB_LOCAL_NAME = f"{APP_NAME.lower()}_{LOCAL}.db"
-DB_LOCAL_DEFAULT_DIR = "C:/Users/Public/Documents"
+DB_LOCAL_DFLT_DIR = "C:/Users/Public/Documents"
 
 # Database
 
@@ -117,8 +117,11 @@ UI_LOGIN = "Login"
 UI_SIGNUP = "Sign Up"
 
     # User
+UI_USER_DATA = "User Data"
 UI_FIRST_NAME = "First name"
 UI_LAST_NAME = "Last name"
+UI_4_DIGITS = "4 Digits"
+UI_CONFIRM = "Confirm"
 
     # About
 UI_CLOSE = "Close"

@@ -19,8 +19,8 @@ def write_config_to_json():
         json.dump(config.path, file, indent=0)
 
 
-def file_exists(file_path):
-    return os.path.exists(file_path)
+def exists(path):
+    return os.path.exists(path)
 
 
 def send_email(email=DEV_EMAIL, title=f"{APP_NAME}_{APP_VERSION}"):

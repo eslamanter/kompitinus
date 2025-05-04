@@ -1,6 +1,6 @@
 import sqlite3
 import config
-from utils import file_exists
+from utils import exists, get_directory
 from constants import (MAIN, LOCAL, DB_EMPLOYEES_ID_BASE, DB_EMPLOYEES_TABLE, DB_EMPLOYEE_ID,
                        DB_FIRST_NAME, DB_LAST_NAME, DB_EMAIL, DB_PIN, DB_REGISTERED_AT, DB_ACTIVE, DB_TASKS_ID_BASE,
                        DB_TASKS_TABLE, DB_TASK_ID, DB_SENDER_ID, DB_RECEIVER_ID, DB_CREATED_AT, DB_MODIFIED_AT,
@@ -23,7 +23,8 @@ from constants import (MAIN, LOCAL, DB_EMPLOYEES_ID_BASE, DB_EMPLOYEES_TABLE, DB
 
 
 def create_main_db():
-    if not file_exists(config.path[MAIN]):
+    # Ensure creating new main DB only if directory exists not in case of lost connection with local server
+    if exists(get_directory(config.path[MAIN])) and not exists(config.path[MAIN]):
 
         # Create and connect to SQLite database
         conn = sqlite3.connect(config.path[MAIN])
@@ -36,7 +37,7 @@ def create_main_db():
             {DB_FIRST_NAME}     TEXT NOT NULL,
             {DB_LAST_NAME}      TEXT NOT NULL,
             {DB_EMAIL}          TEXT NOT NULL UNIQUE,
-            {DB_PIN}            TEXT NOT NULL,
+            {DB_PIN}            BLOB NOT NULL,
             {DB_REGISTERED_AT}  TEXT DEFAULT (datetime('now', 'localtime')),
             {DB_ACTIVE}         INTEGER DEFAULT 1,
             PRIMARY KEY({DB_EMPLOYEE_ID} AUTOINCREMENT)
@@ -85,9 +86,13 @@ def create_main_db():
         conn.commit()
         conn.close()
 
+        return True
+    return False
+
 
 def create_local_db():
-    if not file_exists(config.path[LOCAL]):
+    # Ensure creating new local DB only if directory exists not in case of lost connection with local server
+    if exists(get_directory(config.path[LOCAL])) and not exists(config.path[LOCAL]):
         config.path[DB_EMPLOYEE_ID] = 101 # To delete
 
         # Create and connect to SQLite database
@@ -119,6 +124,9 @@ def create_local_db():
         # Commit and close connection
         conn.commit()
         conn.close()
+
+        return True
+    return False
 
 
 if __name__ == "__main__":

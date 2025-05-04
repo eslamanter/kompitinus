@@ -1,7 +1,7 @@
 import sys
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QFrame, QTableView, QSplitter, QLineEdit,
-    QTextEdit, QCheckBox, QPushButton, QDateTimeEdit, QTreeView, QStatusBar, QMenu, QAction, QToolButton, QFileDialog)
+    QTextEdit, QCheckBox, QPushButton, QDateTimeEdit, QTreeView, QStatusBar, QMenu, QAction, QToolButton)
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QCursor
 from PyQt5.QtCore import Qt
 from readme_ui import ReadmeViewer
@@ -233,9 +233,13 @@ class MainWindow(QMainWindow):
         self.adjustSize()
         self.center()
 
+        # Placeholders
+        self.about_ui = None
+        self.readme_ui = None
+
     def open_directory_dialog(self):
         directory_path = select_directory_dialog(parent=self, default_dir=get_directory(config.path[MAIN]))
-        self.reference_label.setText(f'<a href={directory_path}>{UI_REFERENCE}</a>')
+        self.reference_label.setText(f'<a href={directory_path}>{UI_REFERENCE}:</a>')
         self.reference_label.setToolTip(directory_path)
         if directory_path:
             self.status_bar.showMessage(f"{UI_SELECTED}: {directory_path}")
@@ -250,7 +254,7 @@ class MainWindow(QMainWindow):
     def paste_reference_link(self):
         clipboard = QApplication.clipboard()
         pasted_text = clipboard.text()
-        self.reference_label.setText(f'<a href={pasted_text}>{UI_REFERENCE}</a>')
+        self.reference_label.setText(f'<a href={pasted_text}>{UI_REFERENCE}:</a>')
         self.reference_label.setToolTip(pasted_text)
         if pasted_text:
             self.status_bar.showMessage(f"{UI_PASTED}: {pasted_text}")
@@ -312,11 +316,13 @@ class MainWindow(QMainWindow):
         help_action.triggered.connect(self.show_readme)
 
     def show_about(self):
-        self.about_ui = AboutScreen()
+        if self.about_ui is None:
+            self.about_ui = AboutScreen()
         self.about_ui.show()
 
     def show_readme(self):
-        self.readme_ui = ReadmeViewer()
+        if self.readme_ui is None:
+            self.readme_ui = ReadmeViewer()
         self.readme_ui.show()
 
     def center(self):
@@ -325,13 +331,8 @@ class MainWindow(QMainWindow):
         self.move((screen.width() - size.width()) // 2, (screen.height() - size.height()) // 2)
 
 
-def show_main_ui():
-    main_window = MainWindow()
-    main_window.show()
-
-
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    main_window_ = MainWindow()
-    main_window_.show()
+    main_window = MainWindow()
+    main_window.show()
     sys.exit(app.exec())

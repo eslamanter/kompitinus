@@ -5,13 +5,14 @@ from PyQt5.QtWidgets import (
     QGroupBox, QHBoxLayout, QRadioButton, QToolButton, QFrame, QMenu, QAction)
 from PyQt5.QtCore import Qt
 from about import APP_NAME
-from authn_ui import show_authn_ui
+from authn_ui import AuthnDialog
+from user_ui import UserDialog
 from constants import (UI_DB_EXISTING, UI_DB_NEW, DB_MAIN_NAME, DB_LOCAL_NAME,
-                       UI_CONNECT, DB_LOCAL_DEFAULT_DIR, UI_SELECT_PATH, MSG_SELECT_FILE,
+                       UI_CONNECT, DB_LOCAL_DFLT_DIR, UI_SELECT_PATH, MSG_SELECT_FILE,
                        MAIN, LOCAL, MSG_SELECT_DIR)
 from sqlite_db import create_main_db, create_local_db
 from utils import (select_db_file_dialog, select_directory_dialog, join_paths, get_basename, get_directory,
-                   file_exists, playsound_hand, playsound_exclamation, write_config_to_json)
+                   exists, playsound_hand, playsound_exclamation, write_config_to_json)
 import config
 
 
@@ -73,8 +74,8 @@ class ConfigDialog(QDialog):
 
         local_db_path_layout = QHBoxLayout()
         self.local_db_path = QLineEdit()
-        if file_exists(DB_LOCAL_DEFAULT_DIR):
-            self.local_db_path.setText(join_paths(directory=DB_LOCAL_DEFAULT_DIR, file_name=DB_LOCAL_NAME))
+        if exists(DB_LOCAL_DFLT_DIR):
+            self.local_db_path.setText(join_paths(directory=DB_LOCAL_DFLT_DIR, file_name=DB_LOCAL_NAME))
         self.local_db_path.setReadOnly(True)
         self.local_db_menu_button = QToolButton(self)
         self.local_db_menu_button.setText("... ")
@@ -107,6 +108,10 @@ class ConfigDialog(QDialog):
 
         self.setLayout(layout)
         self.adjustSize()
+
+        # Placeholder
+        self.authn_ui = None
+        self.user_ui = None
 
     def select_db_path(self, db):
         if db == MAIN:
@@ -145,24 +150,33 @@ class ConfigDialog(QDialog):
             config.path[MAIN] = main_db_path
             config.path[LOCAL] = local_db_path
             write_config_to_json()
+
+            # Create main DB and local DB only if they don't exist
+            new_main_db = create_main_db()
+            new_local_db = create_local_db()
+
+            # Close Config UI and show Authn UI to login or User UI to insert new user data
             self.accept()
-
-            show_authn_ui()
-
-            create_main_db() # To delete
-            create_local_db() # To delete
+            if new_main_db: # If new main DB is created, new user is inserted, otherwise, login authn is required
+                self.show_user_ui()
+            else:
+                self.show_authn_ui()
         else:
             playsound_hand()
 
+    def show_authn_ui(self):
+        if self.authn_ui is None:
+            self.authn_ui = AuthnDialog()
+        self.authn_ui.show()
 
-def show_config_ui():
-    playsound_exclamation()
-    config_dialog = ConfigDialog()
-    config_dialog.show()
+    def show_user_ui(self):
+        if self.user_ui is None:
+            self.user_ui = UserDialog()
+        self.user_ui.show()
 
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    config_dialog_ = ConfigDialog()
-    config_dialog_.show()
+    config_dialog = ConfigDialog()
+    config_dialog.show()
     sys.exit(app.exec())
