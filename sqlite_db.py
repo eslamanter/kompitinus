@@ -1,25 +1,50 @@
 import sqlite3
+import bcrypt
 import config
 from utils import exists, get_directory
 from constants import (MAIN, LOCAL, DB_EMPLOYEES_ID_BASE, DB_EMPLOYEES_TABLE, DB_EMPLOYEE_ID,
                        DB_FIRST_NAME, DB_LAST_NAME, DB_EMAIL, DB_PIN, DB_REGISTERED_AT, DB_ACTIVE, DB_TASKS_ID_BASE,
                        DB_TASKS_TABLE, DB_TASK_ID, DB_SENDER_ID, DB_RECEIVER_ID, DB_CREATED_AT, DB_MODIFIED_AT,
                        DB_TITLE, DB_BODY, DB_REFERENCE, DB_DUE_AT, DB_STARRED, DB_STATUS, DB_EXPECTED_AT, DB_REPLY,
-                       DB_ARCHIVED, DB_LOCAL_TABLE, DB_SYNC_AT)
+                       DB_ARCHIVED, DB_LOCAL_TABLE, DB_SYNC_AT, DB_AUTHN_TABLE)
 
 
-# def main_db_conncet():
-#     if os.path.exists(config.db_path[DB_MAIN_PATH]):
-#         conn = sqlite3.connect(config.db_path[DB_MAIN_PATH])
-#         cursor = conn.cursor()
-#         print("Connected to the existing database successfully!")
-#
-#         cursor.execute("SELECT * FROM employees;")
-#         print(cursor.fetchall())
-#
-#         conn.close()
-#     else:
-#         print("Error: Database does not exist!")
+def check_login(email, pin):
+    """Verifies login by checking email-based employee ID and hashed PIN."""
+
+    if exists(config.path[MAIN]):  # Ensure database exists
+        try:
+            # Connect to main DB
+            conn = sqlite3.connect(config.path[MAIN])
+            cursor = conn.cursor()
+
+            # Retrieve employee ID from registered email
+            cursor.execute(f"SELECT {DB_EMPLOYEE_ID} FROM {DB_EMPLOYEES_TABLE} WHERE {DB_EMAIL} = ?", (email,))
+            user_id = cursor.fetchone()
+
+            if user_id:
+                # Fetch stored hashed PIN
+                cursor.execute(f"SELECT {DB_PIN} FROM {DB_AUTHN_TABLE} WHERE {DB_EMPLOYEE_ID} = ?", (user_id[0],))
+                hashed = cursor.fetchone()
+
+                if hashed:
+                    raw = pin.encode('utf-8')  # Convert input PIN to bytes
+
+                    # Securely check hashed PIN
+                    if bcrypt.checkpw(raw, hashed[0]):
+                        return True  # Successful login
+
+                return False  # Incorrect PIN
+
+            return None  # Invalid email (not registered)
+
+        except sqlite3.Error as e:
+            return None
+
+        finally:
+            conn.close()  # Ensure DB closes properly
+
+    return None  # Database file inaccessible or doesn't exist
 
 
 def create_main_db():

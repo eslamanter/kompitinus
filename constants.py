@@ -24,6 +24,8 @@ DB_EMPLOYEES_ID_BASE = 100
 DB_LOCAL_TABLE = LOCAL
 DB_SYNC_AT = "sync_at"
 
+DB_AUTHN_TABLE = "authn"
+
     # Tasks
 DB_TASKS_TABLE = "tasks"
 DB_TASK_ID  = "task_id"
@@ -49,18 +51,15 @@ UI_DATABASE = "Database"
 UI_MAIN = MAIN.capitalize()
 UI_LOCAL = LOCAL.capitalize()
 UI_USER = "User"
-UI_EDIT = "Edit"
 UI_LOGOUT = "Logout"
 UI_SYNC_MODE = "Sync"
 UI_MANUAL = "Manual"
-UI_AUTO = "Auto"
 UI_1MIN = "1 min"
 UI_5MIN = "5 min"
 UI_10MIN = "10 min"
 UI_15MIN = "15 min"
 UI_30MIN = "30 min"
 UI_60MIN = "60 min"
-UI_NEVER = "Never"
 UI_SYNC_TASK = "Sync"
 UI_SEND_TASK = "Send"
 UI_EXPORT = "Export"

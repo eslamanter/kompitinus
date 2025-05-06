@@ -5,8 +5,7 @@ from PyQt5.QtWidgets import (
     QGroupBox, QHBoxLayout, QRadioButton, QToolButton, QFrame, QMenu, QAction)
 from PyQt5.QtCore import Qt
 from about import APP_NAME
-from authn_ui import AuthnDialog
-from user_ui import UserDialog
+from user_ui import UserSignup, UserLogin
 from constants import (UI_DB_EXISTING, UI_DB_NEW, DB_MAIN_NAME, DB_LOCAL_NAME,
                        UI_CONNECT, DB_LOCAL_DFLT_DIR, UI_SELECT_PATH, MSG_SELECT_FILE,
                        MAIN, LOCAL, MSG_SELECT_DIR)
@@ -110,8 +109,8 @@ class ConfigDialog(QDialog):
         self.adjustSize()
 
         # Placeholder
-        self.authn_ui = None
-        self.user_ui = None
+        self.login_ui = None
+        self.signup_ui = None
 
     def select_db_path(self, db):
         if db == MAIN:
@@ -157,22 +156,22 @@ class ConfigDialog(QDialog):
 
             # Close Config UI and show Authn UI to login or User UI to insert new user data
             self.accept()
-            if new_main_db: # If new main DB is created, new user is inserted, otherwise, login authn is required
-                self.show_user_ui()
+            if new_main_db: # If new main DB is created, signup is shown, otherwise, login is firstly shown
+                self.show_signup_ui()
             else:
-                self.show_authn_ui()
+                self.show_login_ui()
         else:
             playsound_hand()
 
-    def show_authn_ui(self):
-        if self.authn_ui is None:
-            self.authn_ui = AuthnDialog()
-        self.authn_ui.show()
+    def show_login_ui(self):
+        if self.login_ui is None:
+            self.login_ui = UserLogin()
+        self.login_ui.show()
 
-    def show_user_ui(self):
-        if self.user_ui is None:
-            self.user_ui = UserDialog()
-        self.user_ui.show()
+    def show_signup_ui(self):
+        if self.signup_ui is None:
+            self.signup_ui = UserSignup()
+        self.signup_ui.show()
 
 
 if __name__ == '__main__':

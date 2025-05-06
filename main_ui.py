@@ -1,7 +1,7 @@
 import sys
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QFrame, QTableView, QSplitter, QLineEdit,
-    QTextEdit, QCheckBox, QPushButton, QDateTimeEdit, QTreeView, QStatusBar, QMenu, QAction, QToolButton)
+    QTextEdit, QCheckBox, QPushButton, QDateTimeEdit, QTreeView, QStatusBar, QMenu, QAction, QToolButton, QActionGroup)
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QCursor
 from PyQt5.QtCore import Qt
 from readme_ui import ReadmeViewer
@@ -269,32 +269,24 @@ class MainWindow(QMainWindow):
     def create_menu_bar(self):
         menu_bar = self.menuBar()
 
-        # Config menu
+        # Config Menu
         config_menu = menu_bar.addMenu(UI_CONFIG)
 
-            # Database menu
-        database_menu = config_menu.addMenu(UI_DATABASE)
-        database_menu.addAction(UI_MAIN)
-        database_menu.addAction(UI_LOCAL)
+            # Database Action
+        config_menu.addAction(UI_DATABASE)
 
-            # Profile menu
-        profile_menu = config_menu.addMenu(UI_USER)
-        profile_menu.addAction(UI_EDIT)
-        profile_menu.addAction(UI_LOGOUT)
+            # User Action
+        config_menu.addAction(UI_USER)
 
-            # Sync menu
+            # Sync Menu
         sync_menu = config_menu.addMenu(UI_SYNC_MODE)
-        sync_menu.addAction(UI_MANUAL)
-
-                # Auto menu
-        auto_sync = sync_menu.addMenu(UI_AUTO)
-        auto_sync.addAction(UI_1MIN)
-        auto_sync.addAction(UI_5MIN)
-        auto_sync.addAction(UI_10MIN)
-        auto_sync.addAction(UI_15MIN)
-        auto_sync.addAction(UI_30MIN)
-        auto_sync.addAction(UI_60MIN)
-        auto_sync.addAction(UI_NEVER)
+        sync_action_group = QActionGroup(self)
+        sync_modes = [UI_MANUAL, UI_1MIN, UI_5MIN, UI_10MIN, UI_15MIN, UI_30MIN, UI_60MIN]
+        for mode in sync_modes:
+            action = sync_menu.addAction(mode)
+            action.setCheckable(True)
+            sync_action_group.addAction(action)
+        sync_action_group.actions()[0].setChecked(True) # Manual by default
 
         # Task menu
         task_menu = menu_bar.addMenu(UI_TASK)
