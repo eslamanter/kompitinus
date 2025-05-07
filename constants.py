@@ -1,30 +1,26 @@
 from about import APP_NAME
 
 # Config
-CONFIG_FILE = "config.json"
-MAIN = "main"
-LOCAL = "local"
-DB_MAIN_NAME = f"{APP_NAME.lower()}_{MAIN}.db"
-DB_LOCAL_NAME = f"{APP_NAME.lower()}_{LOCAL}.db"
-DB_LOCAL_DFLT_DIR = "C:/Users/Public/Documents"
+CFG_FILE = "config.json"
+
+CFG_PATH = "path"
+CFG_ID = "id"
+CFG_PIN = "pin"
 
 # Database
+DB_NAME = f"{APP_NAME.lower()}.db"
 
-    # Employees
-DB_EMPLOYEES_TABLE = "employees"
-DB_EMPLOYEE_ID = "employee_id"
+    # Users
+DB_USERS_TABLE = "users"
+DB_USER_ID = "user_id"
 DB_FIRST_NAME = "first_name"
 DB_LAST_NAME = "last_name"
 DB_EMAIL = "email"
 DB_PIN = "pin"
+DB_SYNC_AT = "sync_at"
 DB_REGISTERED_AT = "registered_at"
 DB_ACTIVE = "active"
-DB_EMPLOYEES_ID_BASE = 100
-
-DB_LOCAL_TABLE = LOCAL
-DB_SYNC_AT = "sync_at"
-
-DB_AUTHN_TABLE = "authn"
+DB_USERS_ID_BASE = 100
 
     # Tasks
 DB_TASKS_TABLE = "tasks"
@@ -48,8 +44,6 @@ DB_TASKS_ID_BASE = 100000
     # Menubar
 UI_CONFIG = "Config"
 UI_DATABASE = "Database"
-UI_MAIN = MAIN.capitalize()
-UI_LOCAL = LOCAL.capitalize()
 UI_USER = "User"
 UI_LOGOUT = "Logout"
 UI_SYNC_MODE = "Sync"
@@ -128,7 +122,10 @@ UI_CLOSE = "Close"
 # Messages
 MSG_SELECT_DIR = "Select Folder"
 MSG_SELECT_FILE = "Select File"
-MSG_DB_MAIN_NOT_FOUND = f"Inaccessible {DB_MAIN_NAME}. Do you want to continue?"
+
+MSG_CFG_INVALID = f"Invalid config data."
+MSG_DB_NOT_FOUND = f"Inaccessible {DB_NAME}"
+MSG_DB_INVALID = f"Invalid database file."
 
 # MSG_NEW_CONFIG = "User config not found. Do you want to create new config?"
 # MSG_INVALID_CONFIG = f"Invalid config data. Check {CONFIG_FILE}"

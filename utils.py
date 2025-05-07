@@ -4,19 +4,19 @@ from PyQt5.QtWidgets import QMessageBox, QFileDialog
 from PyQt5.QtGui import QDesktopServices
 from PyQt5.QtCore import QUrl
 from about import DEV_EMAIL, APP_NAME, APP_VERSION
-from constants import MSG_SELECT_DIR, MSG_SELECT_FILE, CONFIG_FILE
+from constants import MSG_SELECT_DIR, MSG_SELECT_FILE, CFG_FILE
 import winsound
 import config
 
 
 def read_config_from_json():
-    with open(CONFIG_FILE, "r") as file:
+    with open(CFG_FILE, "r") as file:
         return json.load(file)
 
 
 def write_config_to_json():
-    with open(CONFIG_FILE, "w") as file:
-        json.dump(config.path, file, indent=0)
+    with open(CFG_FILE, "w") as file:
+        json.dump(config.db_path, file, indent=0)
 
 
 def exists(path):
@@ -28,30 +28,30 @@ def send_email(email=DEV_EMAIL, title=f"{APP_NAME}_{APP_VERSION}"):
     QDesktopServices.openUrl(QUrl(mailto_link))
 
 
-def question_msg_box(question, title=APP_NAME):
+def question_msg_box(text, title=APP_NAME):
     msg_box = QMessageBox()
     msg_box.setWindowTitle(title)
     msg_box.setIcon(QMessageBox.Question)
-    msg_box.setText(question)
+    msg_box.setText(text)
     msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
     result = msg_box.exec_()
     return result == QMessageBox.Yes
 
 
-def info_msg_box(info, title=APP_NAME):
+def info_msg_box(text, title=APP_NAME):
     msg_box = QMessageBox()
     msg_box.setWindowTitle(title)
     msg_box.setIcon(QMessageBox.Information)
-    msg_box.setText(info)
+    msg_box.setText(text)
     msg_box.setStandardButtons(QMessageBox.Ok)
     msg_box.exec_()
 
 
-def warning_msg_box(warning, title=APP_NAME):
+def warning_msg_box(text, title=APP_NAME):
     msg_box = QMessageBox()
     msg_box.setWindowTitle(title)
     msg_box.setIcon(QMessageBox.Warning)
-    msg_box.setText(warning)
+    msg_box.setText(text)
     msg_box.setStandardButtons(QMessageBox.Ok)
     msg_box.exec_()
 

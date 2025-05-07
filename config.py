@@ -1,6 +1,5 @@
-from constants import MAIN, LOCAL, DB_EMPLOYEE_ID
+from constants import CFG_PATH, CFG_ID, CFG_PIN
 
-# Default config data
-path = {MAIN: "",
-        LOCAL: ""}
-current = {DB_EMPLOYEE_ID: None}
+config = {CFG_PATH: None,
+          CFG_ID: None,
+          CFG_PIN: None}

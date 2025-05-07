@@ -238,7 +238,7 @@ class MainWindow(QMainWindow):
         self.readme_ui = None
 
     def open_directory_dialog(self):
-        directory_path = select_directory_dialog(parent=self, default_dir=get_directory(config.path[MAIN]))
+        directory_path = select_directory_dialog(parent=self, default_dir=get_directory(config.config[CFG_PATH]))
         self.reference_label.setText(f'<a href={directory_path}>{UI_REFERENCE}:</a>')
         self.reference_label.setToolTip(directory_path)
         if directory_path:
@@ -295,8 +295,6 @@ class MainWindow(QMainWindow):
 
         # Export menu
         export_menu = menu_bar.addMenu(UI_EXPORT)
-        export_menu.addAction(UI_MAIN)
-        export_menu.addAction(UI_LOCAL)
 
         # Info menu
         info_menu = menu_bar.addMenu(UI_INFO)

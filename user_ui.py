@@ -102,19 +102,12 @@ class UserSignup(UserDialog):
 
     def user_signup(self):
         self.accept()
-        self.show_main_ui()
-
-    def show_main_ui(self):
-        self.accept()
-        if self.main_ui is None:
-            self.main_ui = MainWindow()
-        self.main_ui.show()
 
     def user_login(self):
         self.accept()
         if self.login_ui is None:
             self.login_ui = UserLogin()
-        self.login_ui.show()
+        self.login_ui.exec()
 
 
 class UserUpdate(UserDialog):
@@ -223,17 +216,13 @@ class UserLogin(QDialog):
         self.signup_ui = None
 
     def user_login(self):
-
-
         self.accept()
-
-
 
     def user_signup(self):
         self.accept()
         if self.signup_ui is None:
             self.signup_ui = UserSignup()
-        self.signup_ui.show()
+        self.signup_ui.exec()
 
 
 if __name__ == '__main__':

@@ -6,12 +6,11 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt
 from about import APP_NAME
 from user_ui import UserSignup, UserLogin
-from constants import (UI_DB_EXISTING, UI_DB_NEW, DB_MAIN_NAME, DB_LOCAL_NAME,
-                       UI_CONNECT, DB_LOCAL_DFLT_DIR, UI_SELECT_PATH, MSG_SELECT_FILE,
-                       MAIN, LOCAL, MSG_SELECT_DIR)
-from sqlite_db import create_main_db, create_local_db
+from constants import UI_DB_EXISTING, UI_DB_NEW, DB_NAME, UI_CONNECT, UI_SELECT_PATH, MSG_SELECT_FILE, MSG_SELECT_DIR, \
+    CFG_PATH
+from sqlite_db import create_db
 from utils import (select_db_file_dialog, select_directory_dialog, join_paths, get_basename, get_directory,
-                   exists, playsound_hand, playsound_exclamation, write_config_to_json)
+                   exists, playsound_hand, write_config_to_json)
 import config
 
 
@@ -25,73 +24,38 @@ class ConfigDialog(QDialog):
 
         layout = QVBoxLayout()
 
-        # Main DB Group
-        main_db_group = QGroupBox(DB_MAIN_NAME)
-        main_db_layout = QVBoxLayout()
+        # DB path Group
+        db_path_group = QGroupBox(DB_NAME)
+        db_path_group_layout = QVBoxLayout()
 
-        main_db_radio_layout = QHBoxLayout()
-        self.main_db_existing = QRadioButton(UI_DB_EXISTING)
-        self.main_db_existing.setChecked(True)
-        self.main_db_new = QRadioButton(UI_DB_NEW)
-        main_db_radio_layout.addWidget(self.main_db_existing)
-        main_db_radio_layout.addWidget(self.main_db_new)
-        main_db_radio_layout.addStretch()
-        main_db_layout.addLayout(main_db_radio_layout)
+        db_radio_layout = QHBoxLayout()
+        self.db_existing = QRadioButton(UI_DB_EXISTING)
+        self.db_existing.setChecked(True)
+        self.db_new = QRadioButton(UI_DB_NEW)
+        db_radio_layout.addWidget(self.db_existing)
+        db_radio_layout.addWidget(self.db_new)
+        db_radio_layout.addStretch()
+        db_path_group_layout.addLayout(db_radio_layout)
 
-        main_db_path_layout = QHBoxLayout()
-        self.main_db_path = QLineEdit()
-        self.main_db_path.setReadOnly(True)
-        self.main_db_menu_button = QToolButton(self)
-        self.main_db_menu_button.setText("... ")
-        self.main_db_menu_button.setPopupMode(QToolButton.InstantPopup)
+        db_path_layout = QHBoxLayout()
+        self.db_path = QLineEdit()
+        self.db_path.setReadOnly(True)
+        self.db_menu_button = QToolButton(self)
+        self.db_menu_button.setText("... ")
+        self.db_menu_button.setPopupMode(QToolButton.InstantPopup)
 
-        self.main_db_menu = QMenu(self)
-        select_main_db_action = QAction(UI_SELECT_PATH, self)
-        select_main_db_action.triggered.connect(lambda: self.select_db_path(MAIN))
-        self.main_db_menu.addAction(select_main_db_action)
-        self.main_db_menu_button.setMenu(self.main_db_menu)
+        self.db_menu = QMenu(self)
+        select_db_action = QAction(UI_SELECT_PATH, self)
+        select_db_action.triggered.connect(self.select_db_path)
+        self.db_menu.addAction(select_db_action)
+        self.db_menu_button.setMenu(self.db_menu)
 
-        main_db_path_layout.addWidget(self.main_db_path)
-        main_db_path_layout.addWidget(self.main_db_menu_button)
-        main_db_layout.addLayout(main_db_path_layout)
+        db_path_layout.addWidget(self.db_path)
+        db_path_layout.addWidget(self.db_menu_button)
+        db_path_group_layout.addLayout(db_path_layout)
 
-        main_db_group.setLayout(main_db_layout)
-        layout.addWidget(main_db_group)
-
-        # Local DB Group
-        local_db_group = QGroupBox(DB_LOCAL_NAME)
-        local_db_layout = QVBoxLayout()
-
-        local_db_radio_layout = QHBoxLayout()
-        self.local_db_existing = QRadioButton(UI_DB_EXISTING)
-        self.local_db_new = QRadioButton(UI_DB_NEW)
-        self.local_db_new.setChecked(True)
-        local_db_radio_layout.addWidget(self.local_db_existing)
-        local_db_radio_layout.addWidget(self.local_db_new)
-        local_db_radio_layout.addStretch()
-        local_db_layout.addLayout(local_db_radio_layout)
-
-        local_db_path_layout = QHBoxLayout()
-        self.local_db_path = QLineEdit()
-        if exists(DB_LOCAL_DFLT_DIR):
-            self.local_db_path.setText(join_paths(directory=DB_LOCAL_DFLT_DIR, file_name=DB_LOCAL_NAME))
-        self.local_db_path.setReadOnly(True)
-        self.local_db_menu_button = QToolButton(self)
-        self.local_db_menu_button.setText("... ")
-        self.local_db_menu_button.setPopupMode(QToolButton.InstantPopup)
-
-        self.local_db_menu = QMenu(self)
-        select_local_db_action = QAction(UI_SELECT_PATH, self)
-        select_local_db_action.triggered.connect(lambda: self.select_db_path(LOCAL))
-        self.local_db_menu.addAction(select_local_db_action)
-        self.local_db_menu_button.setMenu(self.local_db_menu)
-
-        local_db_path_layout.addWidget(self.local_db_path)
-        local_db_path_layout.addWidget(self.local_db_menu_button)
-        local_db_layout.addLayout(local_db_path_layout)
-
-        local_db_group.setLayout(local_db_layout)
-        layout.addWidget(local_db_group)
+        db_path_group.setLayout(db_path_group_layout)
+        layout.addWidget(db_path_group)
 
         # Add horizontal line
         horizontal_line = QFrame()
@@ -112,66 +76,43 @@ class ConfigDialog(QDialog):
         self.login_ui = None
         self.signup_ui = None
 
-    def select_db_path(self, db):
-        if db == MAIN:
-            if self.main_db_existing.isChecked():
-                file_path = select_db_file_dialog(parent=self,
-                                                  title=f"{MSG_SELECT_FILE} {DB_MAIN_NAME}",
-                                                  default_dir=get_directory(self.main_db_path.text()))
-                if file_path:
-                    if get_basename(file_path) == DB_MAIN_NAME:
-                        self.main_db_path.setText(file_path)
-            else:
-                directory_path = select_directory_dialog(parent=self,
-                                                         title=f"{MSG_SELECT_DIR} {DB_MAIN_NAME}",
-                                                         default_dir=get_directory(self.main_db_path.text()))
-                if directory_path:
-                    self.main_db_path.setText(join_paths(directory=directory_path, file_name=DB_MAIN_NAME))
+    def select_db_path(self):
+        if self.db_existing.isChecked():
+            file_path = select_db_file_dialog(parent=self, default_dir=get_directory(self.db_path.text()))
+            if file_path:
+                if get_basename(file_path) == DB_NAME:
+                    self.db_path.setText(file_path)
         else:
-            if self.local_db_existing.isChecked():
-                file_path = select_db_file_dialog(parent=self,
-                                                  title=f"{MSG_SELECT_FILE} {DB_LOCAL_NAME}",
-                                                  default_dir=get_directory(self.local_db_path.text()))
-                if file_path:
-                    if get_basename(file_path) == DB_LOCAL_NAME:
-                        self.local_db_path.setText(file_path)
-            else:
-                directory_path = select_directory_dialog(parent=self,
-                                                         title=f"{MSG_SELECT_DIR} {DB_LOCAL_NAME}",
-                                                         default_dir=get_directory(self.local_db_path.text()))
-                if directory_path:
-                    self.local_db_path.setText(join_paths(directory=directory_path, file_name=DB_LOCAL_NAME))
+            directory_path = select_directory_dialog(parent=self, default_dir=get_directory(self.db_path.text()))
+            if directory_path:
+                self.db_path.setText(join_paths(directory=directory_path, file_name=DB_NAME))
 
     def check_db_config(self):
-        main_db_path = self.main_db_path.text()
-        local_db_path = self.local_db_path.text()
-        if main_db_path and local_db_path:
-            config.path[MAIN] = main_db_path
-            config.path[LOCAL] = local_db_path
-            write_config_to_json()
+        db_path = self.db_path.text()
+        if db_path:
+            config.config[CFG_PATH] = db_path
 
-            # Create main DB and local DB only if they don't exist
-            new_main_db = create_main_db()
-            new_local_db = create_local_db()
+            # Create main DB only if it doesn't exist
+            new_db_created = create_db()
 
             # Close Config UI and show Authn UI to login or User UI to insert new user data
             self.accept()
-            if new_main_db: # If new main DB is created, signup is shown, otherwise, login is firstly shown
-                self.show_signup_ui()
+            if new_db_created: # If new DB is created, signup is shown, otherwise, login is firstly shown
+                self.show_signup()
             else:
-                self.show_login_ui()
+                self.show_login()
         else:
             playsound_hand()
 
-    def show_login_ui(self):
+    def show_login(self):
         if self.login_ui is None:
             self.login_ui = UserLogin()
-        self.login_ui.show()
+        self.login_ui.exec()
 
-    def show_signup_ui(self):
+    def show_signup(self):
         if self.signup_ui is None:
             self.signup_ui = UserSignup()
-        self.signup_ui.show()
+        self.signup_ui.exec()
 
 
 if __name__ == '__main__':
