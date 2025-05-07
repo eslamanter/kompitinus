@@ -16,7 +16,7 @@ def read_config_from_json():
 
 def write_config_to_json():
     with open(CFG_FILE, "w") as file:
-        json.dump(config.db_path, file, indent=0)
+        json.dump(config.config, file, indent=0)
 
 
 def exists(path):
@@ -28,32 +28,32 @@ def send_email(email=DEV_EMAIL, title=f"{APP_NAME}_{APP_VERSION}"):
     QDesktopServices.openUrl(QUrl(mailto_link))
 
 
-def question_msg_box(text, title=APP_NAME):
+def show_question_msg(text, title=APP_NAME):
     msg_box = QMessageBox()
     msg_box.setWindowTitle(title)
     msg_box.setIcon(QMessageBox.Question)
     msg_box.setText(text)
     msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-    result = msg_box.exec_()
+    result = msg_box.exec()
     return result == QMessageBox.Yes
 
 
-def info_msg_box(text, title=APP_NAME):
+def show_info_msg(text, title=APP_NAME):
     msg_box = QMessageBox()
     msg_box.setWindowTitle(title)
     msg_box.setIcon(QMessageBox.Information)
     msg_box.setText(text)
     msg_box.setStandardButtons(QMessageBox.Ok)
-    msg_box.exec_()
+    msg_box.exec()
 
 
-def warning_msg_box(text, title=APP_NAME):
+def show_warning_msg(text, title=APP_NAME):
     msg_box = QMessageBox()
     msg_box.setWindowTitle(title)
     msg_box.setIcon(QMessageBox.Warning)
     msg_box.setText(text)
     msg_box.setStandardButtons(QMessageBox.Ok)
-    msg_box.exec_()
+    msg_box.exec()
 
 def get_basename(file_path):
     return os.path.basename(file_path)

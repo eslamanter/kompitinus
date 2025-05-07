@@ -4,7 +4,7 @@ from about import APP_NAME
 CFG_FILE = "config.json"
 
 CFG_PATH = "path"
-CFG_ID = "id"
+CFG_EMAIL = "email"
 CFG_PIN = "pin"
 
 # Database
@@ -126,6 +126,10 @@ MSG_SELECT_FILE = "Select File"
 MSG_CFG_INVALID = f"Invalid config data."
 MSG_DB_NOT_FOUND = f"Inaccessible {DB_NAME}"
 MSG_DB_INVALID = f"Invalid database file."
+MSG_EMAIL_EXISTS = "Email already exists!"
+MSG_LOGOUT = "Are you sure you want to logout?"
+MSG_CLOSE = "Are you sure you want to close?"
+MSG_WRONG_PIN = "Wrong pin."
 
 # MSG_NEW_CONFIG = "User config not found. Do you want to create new config?"
 # MSG_INVALID_CONFIG = f"Invalid config data. Check {CONFIG_FILE}"

@@ -1,16 +1,13 @@
 import sys
 from PyQt5.QtGui import QCursor
-from PyQt5.QtWidgets import (
-    QApplication, QDialog, QLineEdit, QPushButton, QVBoxLayout,
-    QGroupBox, QHBoxLayout, QRadioButton, QToolButton, QFrame, QMenu, QAction)
+from PyQt5.QtWidgets import (QApplication, QDialog, QLineEdit, QPushButton, QVBoxLayout, QGroupBox, QHBoxLayout,
+                             QRadioButton, QToolButton, QFrame, QMenu, QAction)
 from PyQt5.QtCore import Qt
 from about import APP_NAME
 from user_ui import UserSignup, UserLogin
-from constants import UI_DB_EXISTING, UI_DB_NEW, DB_NAME, UI_CONNECT, UI_SELECT_PATH, MSG_SELECT_FILE, MSG_SELECT_DIR, \
-    CFG_PATH
+from constants import UI_DB_EXISTING, UI_DB_NEW, DB_NAME, UI_CONNECT, UI_SELECT_PATH, CFG_PATH, MSG_CLOSE
 from sqlite_db import create_db
-from utils import (select_db_file_dialog, select_directory_dialog, join_paths, get_basename, get_directory,
-                   exists, playsound_hand, write_config_to_json)
+from utils import select_db_file_dialog, select_directory_dialog, join_paths, get_basename, get_directory
 import config
 
 
@@ -66,6 +63,7 @@ class ConfigDialog(QDialog):
         # Connect Button
         self.connect_button = QPushButton(UI_CONNECT)
         self.connect_button.setCursor(QCursor(Qt.PointingHandCursor))
+        self.connect_button.setEnabled(False)
         self.connect_button.clicked.connect(self.check_db_config)
         layout.addWidget(self.connect_button)
 
@@ -82,10 +80,12 @@ class ConfigDialog(QDialog):
             if file_path:
                 if get_basename(file_path) == DB_NAME:
                     self.db_path.setText(file_path)
+                    self.connect_button.setEnabled(True)
         else:
             directory_path = select_directory_dialog(parent=self, default_dir=get_directory(self.db_path.text()))
             if directory_path:
                 self.db_path.setText(join_paths(directory=directory_path, file_name=DB_NAME))
+                self.connect_button.setEnabled(True)
 
     def check_db_config(self):
         db_path = self.db_path.text()
@@ -95,14 +95,12 @@ class ConfigDialog(QDialog):
             # Create main DB only if it doesn't exist
             new_db_created = create_db()
 
-            # Close Config UI and show Authn UI to login or User UI to insert new user data
+            # Close Config UI and show Authn UI
             self.accept()
             if new_db_created: # If new DB is created, signup is shown, otherwise, login is firstly shown
                 self.show_signup()
             else:
                 self.show_login()
-        else:
-            playsound_hand()
 
     def show_login(self):
         if self.login_ui is None:
@@ -113,6 +111,9 @@ class ConfigDialog(QDialog):
         if self.signup_ui is None:
             self.signup_ui = UserSignup()
         self.signup_ui.exec()
+
+    def closeEvent(self, event):
+        sys.exit()
 
 
 if __name__ == '__main__':

@@ -1,7 +1,7 @@
 import sqlite3
 import bcrypt
 import config
-from utils import exists, get_directory
+from utils import exists
 from constants import (DB_USERS_ID_BASE, DB_USERS_TABLE, DB_USER_ID,
                        DB_FIRST_NAME, DB_LAST_NAME, DB_EMAIL, DB_PIN, DB_REGISTERED_AT, DB_ACTIVE, DB_TASKS_ID_BASE,
                        DB_TASKS_TABLE, DB_TASK_ID, DB_SENDER_ID, DB_RECEIVER_ID, DB_CREATED_AT, DB_MODIFIED_AT,
@@ -9,53 +9,107 @@ from constants import (DB_USERS_ID_BASE, DB_USERS_TABLE, DB_USER_ID,
                        DB_ARCHIVED, CFG_PATH, DB_SYNC_AT)
 
 
+def update_user_data(first_name, last_name, email, pin):
+    # Connect to DB
+    conn = sqlite3.connect(config.config[CFG_PATH])
+    cursor = conn.cursor()
+
+    # Hash user pin
+    salt = bcrypt.gensalt()
+    hashed_pin = bcrypt.hashpw(pin.encode(), salt)
+
+    # Update query
+    cursor.execute(f"""
+        UPDATE {DB_USERS_TABLE}
+        SET {DB_FIRST_NAME} = ?, {DB_LAST_NAME} = ?, {DB_EMAIL} = ?, {DB_PIN} = ?
+        WHERE {DB_USER_ID} = ?
+    """, (first_name, last_name, email, hashed_pin, config.my_id))
+
+    # Commit and close
+    conn.commit()
+    conn.close()
+
+
+def add_new_user(first_name, last_name, email, pin):
+    # Connect to DB
+    conn = sqlite3.connect(config.config[CFG_PATH])
+    cursor = conn.cursor()
+
+    # Hash user pin
+    salt = bcrypt.gensalt()
+    hashed_pin = bcrypt.hashpw(pin.encode(), salt)
+
+    # User data to insert
+    user_data = (first_name, last_name, email, hashed_pin,)
+
+    # Insert query
+    cursor.execute(f"""
+        INSERT INTO {DB_USERS_TABLE} ({DB_FIRST_NAME}, {DB_LAST_NAME}, {DB_EMAIL}, {DB_PIN})
+        VALUES (?, ?, ?, ?)
+    """, user_data)
+
+    # Commit and close
+    conn.commit()
+    conn.close()
+
+
+def email_exists(email):
+    # Connect to DB
+    conn = sqlite3.connect(config.config[CFG_PATH])
+    cursor = conn.cursor()
+
+    # Execute the query
+    cursor.execute(F"SELECT 1 FROM {DB_USERS_TABLE} WHERE {DB_EMAIL} = ?", (email,))
+    result = cursor.fetchone() is not None
+
+    # Close the connection
+    conn.close()
+
+    return result
+
+
 def check_login(email, pin):
     """Verifies login by checking email-based employee ID and hashed PIN."""
 
-    # if exists(config.db_path[MAIN]):  # Ensure database exists
-    #     try:
-    #         # Connect to main DB
-    #         conn = sqlite3.connect(config.db_path[MAIN])
-    #         cursor = conn.cursor()
-    #
-    #         # Retrieve employee ID from registered email
-    #         cursor.execute(f"SELECT {DB_USER_ID} FROM {DB_USERS_TABLE} WHERE {DB_EMAIL} = ?", (email,))
-    #         user_id = cursor.fetchone()
-    #
-    #         if user_id:
-    #             # Fetch stored hashed PIN
-    #             cursor.execute(f"SELECT {DB_PIN} FROM {DB_AUTHN_TABLE} WHERE {DB_USER_ID} = ?", (user_id[0],))
-    #             hashed = cursor.fetchone()
-    #
-    #             if hashed:
-    #                 raw = pin.encode('utf-8')  # Convert input PIN to bytes
-    #
-    #                 # Securely check hashed PIN
-    #                 if bcrypt.checkpw(raw, hashed[0]):
-    #                     return True  # Successful login
-    #
-    #             return False  # Incorrect PIN
-    #
-    #         return None  # Invalid email (not registered)
-    #
-    #     except sqlite3.Error as e:
-    #         return None
-    #
-    #     finally:
-    #         conn.close()  # Ensure DB closes properly
-    #
-    # return None  # Database file inaccessible or doesn't exist
+    if exists(config.config[CFG_PATH]):  # Ensure database exists
+        try:
+            # Connect to main DB
+            conn = sqlite3.connect(config.config[CFG_PATH])
+            cursor = conn.cursor()
+
+            # Retrieve employee ID from registered email
+            cursor.execute(f"SELECT {DB_PIN} FROM {DB_USERS_TABLE} WHERE {DB_EMAIL} = ?", (email,))
+            hashed_pin = cursor.fetchone()
+
+            if hashed_pin:
+                raw = pin.encode('utf-8')  # Convert input PIN to bytes
+
+                # Securely check hashed PIN
+                if bcrypt.checkpw(raw, hashed_pin[0]):
+                    return True  # Successful login
+
+                return False  # Incorrect PIN
+
+            return None  # Invalid email (not registered)
+
+        except sqlite3.Error as e:
+            return None
+
+        finally:
+            conn.close()  # Ensure DB closes properly
+
+    return None  # Database file inaccessible or doesn't exist
 
 
 def create_db():
     # Ensure creating new main DB only if directory exists not in case of lost connection with local server
-    if exists(get_directory(config.config[CFG_PATH])) and not exists(config.config[CFG_PATH]):
+    if not exists(config.config[CFG_PATH]):
 
         # Create and connect to SQLite database
         conn = sqlite3.connect(config.config[CFG_PATH])
         cursor = conn.cursor()
 
-        # Create employees table
+        # Create users table
         cursor.execute(f"""
         CREATE TABLE {DB_USERS_TABLE} (
             {DB_USER_ID}    INTEGER UNIQUE,

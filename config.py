@@ -1,5 +1,7 @@
-from constants import CFG_PATH, CFG_ID, CFG_PIN
+from constants import CFG_PATH, CFG_EMAIL, CFG_PIN
 
-config = {CFG_PATH: None,
-          CFG_ID: None,
-          CFG_PIN: None}
+config = {CFG_PATH: "",
+          CFG_EMAIL: "",
+          CFG_PIN: ""}
+
+my_id = None
