@@ -7,6 +7,7 @@ from PyQt5.QtCore import Qt
 from readme_ui import ReadmeViewer
 from about_ui import AboutScreen
 from constants import *
+from user_ui import UserUpdate
 from utils import send_email, select_directory_dialog, get_directory
 import config
 
@@ -223,7 +224,45 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central_widget)
 
         # Create menu bar
-        self.create_menu_bar()
+        menu_bar = self.menuBar()
+
+            # Config Menu
+        config_menu = menu_bar.addMenu(UI_CONFIG)
+
+                # Database Action
+        config_menu.addAction(UI_DATABASE)
+
+                # User Action
+        user_action = QAction(UI_USER, self)
+        config_menu.addAction(user_action)
+        user_action.triggered.connect(self.show_user)
+
+                # Sync Menu
+        sync_menu = config_menu.addMenu(UI_SYNC_MODE)
+        sync_action_group = QActionGroup(self)
+        sync_modes = [UI_MANUAL, UI_1MIN, UI_5MIN, UI_10MIN, UI_15MIN, UI_30MIN, UI_60MIN]
+        for mode in sync_modes:
+            action = sync_menu.addAction(mode)
+            action.setCheckable(True)
+            sync_action_group.addAction(action)
+        sync_action_group.actions()[0].setChecked(True)  # Manual by default
+
+            # Task menu
+        task_menu = menu_bar.addMenu(UI_TASK)
+        task_menu.addAction(UI_SYNC_TASK)
+        task_menu.addAction(UI_SEND_TASK)
+
+            # Export menu
+        export_menu = menu_bar.addMenu(UI_EXPORT)
+
+            # Info menu
+        info_menu = menu_bar.addMenu(UI_INFO)
+        about_action = QAction(UI_ABOUT, self)
+        info_menu.addAction(about_action)
+        about_action.triggered.connect(self.show_about)
+        help_action = QAction(UI_HELP, self)
+        info_menu.addAction(help_action)
+        help_action.triggered.connect(self.show_readme)
 
         # Create status bar
         self.status_bar = QStatusBar()
@@ -235,6 +274,7 @@ class MainWindow(QMainWindow):
         # Placeholders
         self.about_ui = None
         self.readme_ui = None
+        self.update_ui = None
 
     def open_directory_dialog(self):
         directory_path = select_directory_dialog(parent=self, default_dir=get_directory(config.config[CFG_PATH]))
@@ -265,44 +305,10 @@ class MainWindow(QMainWindow):
         if deleted_text:
             self.status_bar.showMessage(f"{UI_DELETED}: {deleted_text}")
 
-    def create_menu_bar(self):
-        menu_bar = self.menuBar()
-
-        # Config Menu
-        config_menu = menu_bar.addMenu(UI_CONFIG)
-
-            # Database Action
-        config_menu.addAction(UI_DATABASE)
-
-            # User Action
-        config_menu.addAction(UI_USER)
-
-            # Sync Menu
-        sync_menu = config_menu.addMenu(UI_SYNC_MODE)
-        sync_action_group = QActionGroup(self)
-        sync_modes = [UI_MANUAL, UI_1MIN, UI_5MIN, UI_10MIN, UI_15MIN, UI_30MIN, UI_60MIN]
-        for mode in sync_modes:
-            action = sync_menu.addAction(mode)
-            action.setCheckable(True)
-            sync_action_group.addAction(action)
-        sync_action_group.actions()[0].setChecked(True) # Manual by default
-
-        # Task menu
-        task_menu = menu_bar.addMenu(UI_TASK)
-        task_menu.addAction(UI_SYNC_TASK)
-        task_menu.addAction(UI_SEND_TASK)
-
-        # Export menu
-        export_menu = menu_bar.addMenu(UI_EXPORT)
-
-        # Info menu
-        info_menu = menu_bar.addMenu(UI_INFO)
-        about_action = QAction(UI_ABOUT, self)
-        info_menu.addAction(about_action)
-        about_action.triggered.connect(self.show_about)
-        help_action = QAction(UI_HELP, self)
-        info_menu.addAction(help_action)
-        help_action.triggered.connect(self.show_readme)
+    def show_user(self):
+        if self.update_ui is None:
+            self.update_ui = UserUpdate()
+        self.update_ui.show()
 
     def show_about(self):
         if self.about_ui is None:

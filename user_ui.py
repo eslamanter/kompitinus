@@ -7,7 +7,7 @@ import config
 from constants import (APP_NAME, UI_EMAIL, UI_PIN, UI_FIRST_NAME, UI_LAST_NAME, UI_UPDATE, UI_4_DIGITS, UI_SIGNUP,
                        UI_LOGOUT, UI_LOGIN, MSG_EMAIL_EXISTS, CFG_EMAIL, CFG_PIN, CFG_PATH, MSG_LOGOUT, UI_NEW_USER,
                        UI_REGISTERED)
-from sqlite_db import email_exists, check_login, add_new_user, update_user_data
+from sqlite_db import email_exists, check_login, add_new_user, update_user_data, get_user_full_name
 from utils import show_info_msg, write_config, show_question_msg, valid_email, valid_pin, playsound_hand
 
 
@@ -176,8 +176,18 @@ class UserUpdate(UserDialog):
         logout_layout.addStretch()
         layout.addLayout(logout_layout)
 
+        self.get_user_info()
         self.setLayout(layout)
         self.adjustSize()
+
+    def get_user_info(self):
+        user_info = get_user_full_name(config.my_id)
+        if user_info:
+            first_name, last_name = user_info
+            self.first_name_input.setText(first_name)
+            self.last_name_input.setText(last_name)
+            self.email_input.setText(config.config[CFG_EMAIL])
+            self.pin_input.setText(config.config[CFG_PIN])
 
     def check_update_button(self):
         if self.check_data():
@@ -186,15 +196,17 @@ class UserUpdate(UserDialog):
             self.update_button.setEnabled(False)
 
     def user_update(self):
-        if self.email_input.text() == config.config[CFG_EMAIL] or not email_exists(self.email_input):
+        if self.email_input.text() == config.config[CFG_EMAIL] or not email_exists(self.email_input.text()):
             update_user_data(first_name=self.first_name_input.text(),
                              last_name=self.last_name_input.text(),
                              email=self.email_input.text(),
                              pin=self.pin_input.text())
 
-            config.config[CFG_EMAIL] = self.email_input.text()
-            config.config[CFG_PIN] = self.pin_input.text()
-            write_config()
+            if config.config[CFG_EMAIL] != self.email_input.text() or config.config[CFG_PIN] != self.pin_input.text():
+                config.config[CFG_EMAIL] = self.email_input.text()
+                config.config[CFG_PIN] = self.pin_input.text()
+                write_config()
+            self.accept()
         else:
             show_info_msg(text=MSG_EMAIL_EXISTS)
 
@@ -207,6 +219,10 @@ class UserUpdate(UserDialog):
             write_config()
             self.accept()
             sys.exit()
+
+    def closeEvent(self, event):
+        self.get_user_info()
+        event.accept()
 
 
 class UserLogin(QDialog):

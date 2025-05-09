@@ -24,6 +24,34 @@ def email_exists(email):
     return result
 
 
+def get_user_full_name(user_id):
+    """Retrieves first name, last name, and email for the given user ID."""
+
+    try:
+        # Connect to the database
+        conn = sqlite3.connect(config.config[CFG_PATH])
+        cursor = conn.cursor()
+
+        # Query to fetch user details
+        cursor.execute(f"""
+            SELECT {DB_FIRST_NAME}, {DB_LAST_NAME}
+            FROM {DB_USERS_TABLE}
+            WHERE {DB_USER_ID} = ?
+        """, (user_id,))
+
+        # Fetch the result
+        user_info = cursor.fetchone()
+
+        # Close connection
+        conn.close()
+
+        # Return the user info if found
+        return user_info if user_info else None
+
+    except sqlite3.Error as e:
+        return None
+
+
 def add_new_user(first_name, last_name, email, pin):
     # Connect to DB
     conn = sqlite3.connect(config.config[CFG_PATH])
