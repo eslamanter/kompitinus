@@ -1,4 +1,17 @@
-from about import APP_NAME
+# Developer info
+DEV_NAME = 'Eslam Anter'
+DEV_EMAIL = 'eslam.anter@outlook.com'
+
+# App info
+APP_NAME = 'Kompitinus'
+APP_VERSION = '1.0'
+APP_PHASE = 'Alpha'
+APP_YEAR = '2025'
+APP_ABOUT = "Un'applicazione per gestire, scambiare e analizzare i compiti di lavoro."
+APP_COPYRIGHT = (f"© {APP_YEAR} {DEV_NAME}. Tutti i diritti riservati.\n"
+                 "È vietata la distribuzione o l'utilizzo non autorizzato.")
+APP_DISCLAIMER = (f"ESCLUSIONE DI RESPONSABILITÀ:\n"
+                  "Questo software è distribuito senza alcuna garanzia di prestazioni o risultati.")
 
 # Config
 CFG_FILE = "config.json"
@@ -107,7 +120,9 @@ UI_SELECT_PATH = "Select Path"
 UI_EMAIL = "Email"
 UI_PIN = "Pin"
 UI_LOGIN = "Login"
+UI_REGISTERED = "Registered user"
 UI_SIGNUP = "Sign Up"
+UI_NEW_USER = "New user"
 
     # User
 UI_USER_DATA = "User Data"
@@ -123,21 +138,10 @@ UI_CLOSE = "Close"
 MSG_SELECT_DIR = "Select Folder"
 MSG_SELECT_FILE = "Select File"
 
-MSG_CFG_INVALID = f"Invalid config data."
-MSG_DB_NOT_FOUND = f"Inaccessible {DB_NAME}"
-MSG_DB_INVALID = f"Invalid database file."
+MSG_DB_INACCESSIBLE = f"Inaccessible Database!"
 MSG_EMAIL_EXISTS = "Email already exists!"
 MSG_LOGOUT = "Are you sure you want to logout?"
 MSG_CLOSE = "Are you sure you want to close?"
-MSG_WRONG_PIN = "Wrong pin."
-
-# MSG_NEW_CONFIG = "User config not found. Do you want to create new config?"
-# MSG_INVALID_CONFIG = f"Invalid config data. Check {CONFIG_FILE}"
-# MSG_INVALID_DB_NAME = "Invalid database name!"
-# MSG_EXISTS_DB_MAIN = "Do you want to connect to an existing main database?"
-# MSG_NEW_DB_MAIN = "Do you want to create new main database?"
-# MSG_EXISTS_DB_LOCAL = "Do you want to synchronize an existing local database?"
-# MSG_NEW_DB_LOCAL = "Do you want to create new local database?"
 
 # Help
 README_URL = f"https://raw.githubusercontent.com/eslamanter/{APP_NAME.lower()}/main/README.md"

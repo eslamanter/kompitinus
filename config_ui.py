@@ -3,9 +3,8 @@ from PyQt5.QtGui import QCursor
 from PyQt5.QtWidgets import (QApplication, QDialog, QLineEdit, QPushButton, QVBoxLayout, QGroupBox, QHBoxLayout,
                              QRadioButton, QToolButton, QFrame, QMenu, QAction)
 from PyQt5.QtCore import Qt
-from about import APP_NAME
 from user_ui import UserSignup, UserLogin
-from constants import UI_DB_EXISTING, UI_DB_NEW, DB_NAME, UI_CONNECT, UI_SELECT_PATH, CFG_PATH, MSG_CLOSE
+from constants import APP_NAME, UI_DB_EXISTING, UI_DB_NEW, DB_NAME, UI_CONNECT, UI_SELECT_PATH, CFG_PATH
 from sqlite_db import create_db
 from utils import select_db_file_dialog, select_directory_dialog, join_paths, get_basename, get_directory
 import config
@@ -64,7 +63,7 @@ class ConfigDialog(QDialog):
         self.connect_button = QPushButton(UI_CONNECT)
         self.connect_button.setCursor(QCursor(Qt.PointingHandCursor))
         self.connect_button.setEnabled(False)
-        self.connect_button.clicked.connect(self.check_db_config)
+        self.connect_button.clicked.connect(self.connect_db)
         layout.addWidget(self.connect_button)
 
         self.setLayout(layout)
@@ -87,12 +86,12 @@ class ConfigDialog(QDialog):
                 self.db_path.setText(join_paths(directory=directory_path, file_name=DB_NAME))
                 self.connect_button.setEnabled(True)
 
-    def check_db_config(self):
+    def connect_db(self):
         db_path = self.db_path.text()
         if db_path:
             config.config[CFG_PATH] = db_path
 
-            # Create main DB only if it doesn't exist
+            # Create DB only if it doesn't exist
             new_db_created = create_db()
 
             # Close Config UI and show Authn UI

@@ -4,4 +4,4 @@ config = {CFG_PATH: "",
           CFG_EMAIL: "",
           CFG_PIN: ""}
 
-my_id = None
+my_id = 0

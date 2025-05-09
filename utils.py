@@ -3,18 +3,17 @@ import os
 from PyQt5.QtWidgets import QMessageBox, QFileDialog
 from PyQt5.QtGui import QDesktopServices
 from PyQt5.QtCore import QUrl
-from about import DEV_EMAIL, APP_NAME, APP_VERSION
-from constants import MSG_SELECT_DIR, MSG_SELECT_FILE, CFG_FILE
+from constants import DEV_EMAIL, APP_NAME, APP_VERSION, MSG_SELECT_DIR, MSG_SELECT_FILE, CFG_FILE
 import winsound
 import config
 
 
-def read_config_from_json():
+def read_config():
     with open(CFG_FILE, "r") as file:
         return json.load(file)
 
 
-def write_config_to_json():
+def write_config():
     with open(CFG_FILE, "w") as file:
         json.dump(config.config, file, indent=0)
 
@@ -87,3 +86,15 @@ def playsound_exclamation():
 
 def playsound_ok():
     winsound.MessageBeep(winsound.MB_OK)
+
+
+def valid_email(email):
+    if "@" not in email or "." not in email or len(email) < 6:
+        return False
+    return True
+
+
+def valid_pin(pin):
+    if not pin.isdigit() or len(pin) != 4:
+        return False
+    return True

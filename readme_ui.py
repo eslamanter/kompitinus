@@ -3,8 +3,7 @@ import requests
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from markdown import markdown
-from constants import README_URL
-from about import APP_NAME
+from constants import APP_NAME, README_URL
 
 class ReadmeViewer(QMainWindow):
     def __init__(self):

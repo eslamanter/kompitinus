@@ -7,7 +7,6 @@ from PyQt5.QtCore import Qt
 from readme_ui import ReadmeViewer
 from about_ui import AboutScreen
 from constants import *
-from about import APP_NAME
 from utils import send_email, select_directory_dialog, get_directory
 import config
 

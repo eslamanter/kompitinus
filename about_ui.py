@@ -2,8 +2,7 @@ from PyQt5.QtWidgets import QApplication, QLabel, QVBoxLayout, QWidget, QPushBut
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QCursor
 import sys
-from about import APP_NAME, APP_VERSION, APP_PHASE, APP_ABOUT, APP_DISCLAIMER, APP_COPYRIGHT, DEV_EMAIL
-from constants import UI_CLOSE
+from constants import APP_NAME, APP_VERSION, APP_PHASE, APP_ABOUT, APP_DISCLAIMER, APP_COPYRIGHT, DEV_EMAIL, UI_CLOSE
 from utils import send_email
 
 

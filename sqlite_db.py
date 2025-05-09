@@ -9,6 +9,47 @@ from constants import (DB_USERS_ID_BASE, DB_USERS_TABLE, DB_USER_ID,
                        DB_ARCHIVED, CFG_PATH, DB_SYNC_AT)
 
 
+def email_exists(email):
+    # Connect to DB
+    conn = sqlite3.connect(config.config[CFG_PATH])
+    cursor = conn.cursor()
+
+    # Execute the query
+    cursor.execute(F"SELECT 1 FROM {DB_USERS_TABLE} WHERE {DB_EMAIL} = ?", (email,))
+    result = cursor.fetchone() is not None
+
+    # Close the connection
+    conn.close()
+
+    return result
+
+
+def add_new_user(first_name, last_name, email, pin):
+    # Connect to DB
+    conn = sqlite3.connect(config.config[CFG_PATH])
+    cursor = conn.cursor()
+
+    # Hash user pin
+    salt = bcrypt.gensalt()
+    hashed_pin = bcrypt.hashpw(pin.encode(), salt)
+
+    # User data to insert
+    user_data = (first_name, last_name, email, hashed_pin,)
+
+    # Insert query
+    cursor.execute(f"""
+        INSERT INTO {DB_USERS_TABLE} ({DB_FIRST_NAME}, {DB_LAST_NAME}, {DB_EMAIL}, {DB_PIN})
+        VALUES (?, ?, ?, ?)
+    """, user_data)
+
+    # Get user ID
+    config.my_id = cursor.lastrowid
+
+    # Commit and close
+    conn.commit()
+    conn.close()
+
+
 def update_user_data(first_name, last_name, email, pin):
     # Connect to DB
     conn = sqlite3.connect(config.config[CFG_PATH])
@@ -30,46 +71,8 @@ def update_user_data(first_name, last_name, email, pin):
     conn.close()
 
 
-def add_new_user(first_name, last_name, email, pin):
-    # Connect to DB
-    conn = sqlite3.connect(config.config[CFG_PATH])
-    cursor = conn.cursor()
-
-    # Hash user pin
-    salt = bcrypt.gensalt()
-    hashed_pin = bcrypt.hashpw(pin.encode(), salt)
-
-    # User data to insert
-    user_data = (first_name, last_name, email, hashed_pin,)
-
-    # Insert query
-    cursor.execute(f"""
-        INSERT INTO {DB_USERS_TABLE} ({DB_FIRST_NAME}, {DB_LAST_NAME}, {DB_EMAIL}, {DB_PIN})
-        VALUES (?, ?, ?, ?)
-    """, user_data)
-
-    # Commit and close
-    conn.commit()
-    conn.close()
-
-
-def email_exists(email):
-    # Connect to DB
-    conn = sqlite3.connect(config.config[CFG_PATH])
-    cursor = conn.cursor()
-
-    # Execute the query
-    cursor.execute(F"SELECT 1 FROM {DB_USERS_TABLE} WHERE {DB_EMAIL} = ?", (email,))
-    result = cursor.fetchone() is not None
-
-    # Close the connection
-    conn.close()
-
-    return result
-
-
 def check_login(email, pin):
-    """Verifies login by checking email-based employee ID and hashed PIN."""
+    """Verifies login by checking email-based user ID and hashed PIN."""
 
     if exists(config.config[CFG_PATH]):  # Ensure database exists
         try:
@@ -77,15 +80,19 @@ def check_login(email, pin):
             conn = sqlite3.connect(config.config[CFG_PATH])
             cursor = conn.cursor()
 
-            # Retrieve employee ID from registered email
-            cursor.execute(f"SELECT {DB_PIN} FROM {DB_USERS_TABLE} WHERE {DB_EMAIL} = ?", (email,))
-            hashed_pin = cursor.fetchone()
+            # Retrieve user ID and hashed PIN from registered email
+            cursor.execute(f"SELECT {DB_USER_ID}, {DB_PIN} FROM {DB_USERS_TABLE} WHERE {DB_EMAIL} = ?",
+                           (email,))
+            result = cursor.fetchone()
 
-            if hashed_pin:
+            if result:
+                user_id, hashed_pin = result  # Extract user ID and hashed PIN
                 raw = pin.encode('utf-8')  # Convert input PIN to bytes
 
                 # Securely check hashed PIN
-                if bcrypt.checkpw(raw, hashed_pin[0]):
+                if bcrypt.checkpw(raw, hashed_pin):
+
+                    config.my_id = user_id
                     return True  # Successful login
 
                 return False  # Incorrect PIN
@@ -94,9 +101,6 @@ def check_login(email, pin):
 
         except sqlite3.Error as e:
             return None
-
-        finally:
-            conn.close()  # Ensure DB closes properly
 
     return None  # Database file inaccessible or doesn't exist
 
@@ -168,45 +172,6 @@ def create_db():
 
         return True
     return False
-
-
-# def create_local_db():
-#     # Ensure creating new local DB only if directory exists not in case of lost connection with local server
-#     if exists(get_directory(config.db_path[LOCAL])) and not exists(config.db_path[LOCAL]):
-#         config.db_path[DB_USER_ID] = 101 # To delete
-#
-#         # Create and connect to SQLite database
-#         conn = sqlite3.connect(config.db_path[LOCAL])
-#         cursor = conn.cursor()
-#
-#         # Attach the new database
-#         cursor.execute(f"ATTACH DATABASE '{config.db_path[MAIN]}' AS {MAIN}_db")
-#
-#         # Copy the filtered rows
-#         cursor.execute(f"""
-#             CREATE TABLE {DB_TASKS_TABLE} AS
-#             SELECT * FROM {MAIN}_db.{DB_TASKS_TABLE}
-#             WHERE {DB_SENDER_ID} = ? OR {DB_RECEIVER_ID} = ?;
-#         """, (config.db_path[DB_USER_ID], config.db_path[DB_USER_ID]))
-#
-#         cursor.execute(f"""
-#         CREATE TABLE {DB_LOCAL_TABLE} (
-#             {DB_USER_ID}    INTEGER,
-#             {CFG_SYNC}        TEXT DEFAULT (datetime('now', 'localtime'))
-#         );
-#         """)
-#
-#         cursor.execute(
-#             f"INSERT INTO {DB_LOCAL_TABLE} ({DB_USER_ID}) VALUES (?)",
-#             (config.db_path[DB_USER_ID],)
-#         )
-#
-#         # Commit and close connection
-#         conn.commit()
-#         conn.close()
-#
-#         return True
-#     return False
 
 
 if __name__ == "__main__":
