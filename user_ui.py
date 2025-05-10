@@ -6,7 +6,7 @@ from PyQt5.QtCore import Qt
 import config
 from constants import (APP_NAME, UI_EMAIL, UI_PIN, UI_FIRST_NAME, UI_LAST_NAME, UI_UPDATE, UI_4_DIGITS, UI_SIGNUP,
                        UI_LOGOUT, UI_LOGIN, MSG_EMAIL_EXISTS, CFG_EMAIL, CFG_PIN, CFG_PATH, MSG_LOGOUT, UI_NEW_USER,
-                       UI_REGISTERED, UI_COMPANY)
+                       UI_REGISTERED, UI_COMPANY, UI_USER_DATA)
 from sqlite_db import email_exists, check_login, add_new_user, update_user_data, get_user_full_name
 from utils import show_info_msg, write_config, show_question_msg, valid_email, valid_pin, playsound_hand
 
@@ -119,9 +119,9 @@ class UserSignup(UserDialog):
         if email_exists(self.email_input.text()):
             show_info_msg(text=MSG_EMAIL_EXISTS)
         else:
-            add_new_user(first_name=self.first_name_input.text(),
-                         last_name=self.last_name_input.text(),
-                         email=self.email_input.text(),
+            add_new_user(first_name=self.first_name_input.text().title(),
+                         last_name=self.last_name_input.text().title(),
+                         email=self.email_input.text().lower(),
                          pin=self.pin_input.text())
 
             config.config[CFG_EMAIL] = self.email_input.text()
@@ -149,7 +149,7 @@ class UserUpdate(UserDialog):
         self.pin_input.textChanged.connect(self.check_update_button)
 
         layout = self.layout()
-        self.user_group.setTitle(UI_UPDATE)
+        self.user_group.setTitle(UI_USER_DATA)
 
         # Add update button
         self.update_button = QPushButton(UI_UPDATE)

@@ -9,6 +9,23 @@ from constants import (DB_USERS_ID_BASE, DB_USERS_TABLE, DB_USER_ID,
                        DB_ARCHIVED, CFG_PATH, DB_SYNC_AT)
 
 
+def get_all_users():
+    if exists(config.config[CFG_PATH]):
+        # Connect to DB
+        conn = sqlite3.connect(config.config[CFG_PATH])
+        cursor = conn.cursor()
+
+        # Fetch all users, ordered by last name then first name
+        cursor.execute(f"""
+        SELECT {DB_USER_ID}, {DB_FIRST_NAME}, {DB_LAST_NAME}, {DB_EMAIL}
+        FROM {DB_USERS_TABLE}
+        ORDER BY {DB_LAST_NAME} ASC, {DB_FIRST_NAME} ASC
+        """)
+
+        return cursor.fetchall()  # Get all rows
+    return []
+
+
 def email_exists(email):
     # Connect to DB
     conn = sqlite3.connect(config.config[CFG_PATH])

@@ -74,8 +74,8 @@ UI_MIN60 = "60 min"
 UI_NEVER = "Mai"
         # Export
 UI_EXPORT_MENU = "Esporta"
-UI_PERSONAL = "Compiti personali"
-UI_ALL = "Tutti i compiti"
+UI_PERSONAL_TASKS = "Compiti personali"
+UI_ALL_TASKS = "Tutti i compiti"
         # Info
 UI_INFO_MENU = "Info"
 UI_ABOUT = "App"
@@ -87,6 +87,8 @@ UI_OUTBOX = "Outbox"
 UI_SELFBOX = "Selfbox"
 UI_STARREDBOX = "Contrassegnato"
 UI_ARCHIVEDBOX = "Archivio"
+UI_ALL_USERS = "Utenti"
+UI_SEND_TASK = "Assegna compito"
 
     # Task details panel
 UI_TASK_ID = "ID compito"

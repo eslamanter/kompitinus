@@ -7,9 +7,11 @@ from PyQt5.QtCore import Qt
 from readme_ui import ReadmeViewer
 from about_ui import AboutScreen
 from constants import *
+from sqlite_db import get_all_users
 from user_ui import UserUpdate
 from utils import send_email, select_directory_dialog, get_directory, show_question_msg
 import config
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -18,25 +20,52 @@ class MainWindow(QMainWindow):
 
         central_widget = QWidget()
 
-        # Add tree view
         self.tree_view = QTreeView(self)
         self.tree_model = QStandardItemModel()
         self.tree_view.setModel(self.tree_model)
-        # self.tree_view.setHeaderHidden(True)
+        self.tree_view.header().setHidden(True)
 
-        # Add items to the tree view
-        root_item = self.tree_model.invisibleRootItem()
+        # Create Parent Items
+        my_boxes_items = QStandardItem(config.config[CFG_EMAIL])
+        all_users_item = QStandardItem(UI_ALL_USERS)
+
+        # Create Child Items for Folders
         inbox_item = QStandardItem(UI_INBOX)
         outbox_item = QStandardItem(UI_OUTBOX)
         selfbox_item = QStandardItem(UI_SELFBOX)
         starred_item = QStandardItem(UI_STARRED)
         archived_item = QStandardItem(UI_ARCHIVEDBOX)
 
-        root_item.appendRow(inbox_item)
-        root_item.appendRow(outbox_item)
-        root_item.appendRow(selfbox_item)
-        root_item.appendRow(starred_item)
-        root_item.appendRow(archived_item)
+        my_boxes_items.appendRow(inbox_item)
+        my_boxes_items.appendRow(outbox_item)
+        my_boxes_items.appendRow(selfbox_item)
+        my_boxes_items.appendRow(starred_item)
+        my_boxes_items.appendRow(archived_item)
+
+        # Get all users form DB
+        users = get_all_users()
+
+        # Populate users full names under all_users_item
+        for user in users:
+            user_id, first_name, last_name, email = user
+            user_item = QStandardItem(f"{last_name} {first_name}")
+            user_item.setData(user_id, Qt.UserRole)
+            user_item.setData(email, Qt.ToolTipRole)
+            all_users_item.appendRow(user_item)
+
+        self.tree_view.selectionModel().selectionChanged.connect(
+            lambda: self.on_item_selected(self.tree_view.selectionModel()))
+
+        # Add Both Parent Items to the Tree Root
+        root_item = self.tree_model.invisibleRootItem()
+        root_item.appendRow(my_boxes_items)
+        root_item.appendRow(all_users_item)
+
+        self.tree_view.expandAll()
+
+        # Enable custom context menu
+        self.tree_view.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.tree_view.customContextMenuRequested.connect(self.show_context_menu)
 
         # Create table view
         self.table_view = QTableView()
@@ -253,10 +282,10 @@ class MainWindow(QMainWindow):
             # Export Menu
         export_menu = menu_bar.addMenu(UI_EXPORT_MENU)
                 # Personal
-        personal_action = QAction(UI_PERSONAL, self)
+        personal_action = QAction(UI_PERSONAL_TASKS, self)
         export_menu.addAction(personal_action)
                 # All
-        all_action = QAction(UI_ALL, self)
+        all_action = QAction(UI_ALL_TASKS, self)
         export_menu.addAction(all_action)
             # Info Menu
                 # About
@@ -280,6 +309,33 @@ class MainWindow(QMainWindow):
         self.about_ui = None
         self.readme_ui = None
         self.update_ui = None
+
+    def on_item_selected(self, selection_model):
+        for index in selection_model.selectedIndexes():
+            user_id = index.data(Qt.UserRole)  # Retrieve stored user ID
+            print(f"Selected User ID: {user_id}")
+
+    def show_context_menu(self, position):
+        """Display right-click menu."""
+        index = self.tree_view.indexAt(position)
+        if not index.isValid():
+            return  # Ignore if no item is clicked
+
+        user_id = index.data(Qt.UserRole)  # Retrieve stored user ID
+        if user_id is None:
+            return  # Ignore if clicked item is not a user
+
+        # Create Context Menu
+        menu = QMenu(self)
+        send_task_action = QAction(UI_SEND_TASK, self)
+        send_task_action.triggered.connect(lambda: self.send_task(user_id))
+
+        menu.addAction(send_task_action)
+        menu.exec(self.tree_view.viewport().mapToGlobal(position))
+
+    def send_task(self, user_id):
+        print('from', config.my_id)
+        print('to', user_id)
 
     def open_directory_dialog(self):
         directory_path = select_directory_dialog(parent=self, default_dir=get_directory(config.config[CFG_PATH]))
