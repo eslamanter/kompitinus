@@ -3,7 +3,7 @@ import config
 from PyQt5.QtWidgets import QApplication
 from constants import DB_NAME, CFG_FILE, CFG_PATH, CFG_EMAIL, CFG_PIN, MSG_DB_INACCESSIBLE
 from sqlite_db import check_login, email_exists
-from utils import exists, get_basename, read_config, show_warning_msg, valid_pin, write_config
+from utils import exists, get_basename, read_config, show_warning_msg, valid_pin
 from config_ui import ConfigDialog
 from user_ui import UserLogin, UserSignup
 from main_ui import MainWindow
@@ -50,9 +50,9 @@ def check_config():
                             show_login_ui()
                     else: # If user email or user pin or both are missing in config.json
                         show_login_ui()
-                else: # If DB file is missing or inaccessible
+                else: # If DB file is inaccessible
                     show_warning_msg(text=MSG_DB_INACCESSIBLE)
-                    show_config_ui()
+                    sys.exit()
             else: # If DB name is wrong
                 show_config_ui()
         else: # If path is missing in config.json

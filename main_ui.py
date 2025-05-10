@@ -8,7 +8,7 @@ from readme_ui import ReadmeViewer
 from about_ui import AboutScreen
 from constants import *
 from user_ui import UserUpdate
-from utils import send_email, select_directory_dialog, get_directory
+from utils import send_email, select_directory_dialog, get_directory, show_question_msg
 import config
 
 class MainWindow(QMainWindow):
@@ -30,7 +30,7 @@ class MainWindow(QMainWindow):
         outbox_item = QStandardItem(UI_OUTBOX)
         selfbox_item = QStandardItem(UI_SELFBOX)
         starred_item = QStandardItem(UI_STARRED)
-        archived_item = QStandardItem(UI_ARCHIVED)
+        archived_item = QStandardItem(UI_ARCHIVEDBOX)
 
         root_item.appendRow(inbox_item)
         root_item.appendRow(outbox_item)
@@ -225,41 +225,46 @@ class MainWindow(QMainWindow):
 
         # Create menu bar
         menu_bar = self.menuBar()
-
-            # Config Menu
-        config_menu = menu_bar.addMenu(UI_CONFIG)
-
-                # Database Action
-        config_menu.addAction(UI_DATABASE)
-
-                # User Action
-        user_action = QAction(UI_USER, self)
-        config_menu.addAction(user_action)
-        user_action.triggered.connect(self.show_user)
-
-                # Sync Menu
-        sync_menu = config_menu.addMenu(UI_SYNC_MODE)
-        sync_action_group = QActionGroup(self)
-        sync_modes = [UI_MANUAL, UI_1MIN, UI_5MIN, UI_10MIN, UI_15MIN, UI_30MIN, UI_60MIN]
-        for mode in sync_modes:
-            action = sync_menu.addAction(mode)
-            action.setCheckable(True)
-            sync_action_group.addAction(action)
-        sync_action_group.actions()[0].setChecked(True)  # Manual by default
-
-            # Task menu
-        task_menu = menu_bar.addMenu(UI_TASK)
-        task_menu.addAction(UI_SYNC_TASK)
-        task_menu.addAction(UI_SEND_TASK)
-
-            # Export menu
-        export_menu = menu_bar.addMenu(UI_EXPORT)
-
-            # Info menu
-        info_menu = menu_bar.addMenu(UI_INFO)
+            # User Menu
+        user_menu = menu_bar.addMenu(UI_USER_MENU)
+        user_data_action = QAction(UI_USER_DATA, self)
+        user_data_action.triggered.connect(self.show_user)
+        user_menu.addAction(user_data_action)
+            # Task Sync
+        sync_menu = menu_bar.addMenu(UI_SYNC_MENU)
+        synchronize_action = QAction(UI_SYNCHRONIZE, self)
+        sync_menu.addAction(synchronize_action)
+                # Autosync
+        auto_menu = sync_menu.addMenu(UI_AUTO_MENU)
+        min01_action = QAction(UI_MIN01, self)
+        min05_action = QAction(UI_MIN05, self)
+        min10_action = QAction(UI_MIN10, self)
+        min15_action = QAction(UI_MIN15, self)
+        min30_action = QAction(UI_MIN30, self)
+        min60_action = QAction(UI_MIN60, self)
+        never_action = QAction(UI_NEVER, self)
+        auto_menu.addAction(min01_action)
+        auto_menu.addAction(min05_action)
+        auto_menu.addAction(min10_action)
+        auto_menu.addAction(min15_action)
+        auto_menu.addAction(min30_action)
+        auto_menu.addAction(min60_action)
+        auto_menu.addAction(never_action)
+            # Export Menu
+        export_menu = menu_bar.addMenu(UI_EXPORT_MENU)
+                # Personal
+        personal_action = QAction(UI_PERSONAL, self)
+        export_menu.addAction(personal_action)
+                # All
+        all_action = QAction(UI_ALL, self)
+        export_menu.addAction(all_action)
+            # Info Menu
+                # About
+        info_menu = menu_bar.addMenu(UI_INFO_MENU)
         about_action = QAction(UI_ABOUT, self)
         info_menu.addAction(about_action)
         about_action.triggered.connect(self.show_about)
+                # Help
         help_action = QAction(UI_HELP, self)
         info_menu.addAction(help_action)
         help_action.triggered.connect(self.show_readme)
@@ -325,6 +330,12 @@ class MainWindow(QMainWindow):
         size = self.geometry()
         self.move((screen.width() - size.width()) // 2, (screen.height() - size.height()) // 2)
 
+    def closeEvent(self, event):
+        response = show_question_msg(text=MSG_CLOSE)
+        if response:
+            sys.exit()
+        else:
+            event.ignore()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

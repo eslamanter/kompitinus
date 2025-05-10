@@ -6,7 +6,7 @@ from PyQt5.QtCore import Qt
 import config
 from constants import (APP_NAME, UI_EMAIL, UI_PIN, UI_FIRST_NAME, UI_LAST_NAME, UI_UPDATE, UI_4_DIGITS, UI_SIGNUP,
                        UI_LOGOUT, UI_LOGIN, MSG_EMAIL_EXISTS, CFG_EMAIL, CFG_PIN, CFG_PATH, MSG_LOGOUT, UI_NEW_USER,
-                       UI_REGISTERED)
+                       UI_REGISTERED, UI_COMPANY)
 from sqlite_db import email_exists, check_login, add_new_user, update_user_data, get_user_full_name
 from utils import show_info_msg, write_config, show_question_msg, valid_email, valid_pin, playsound_hand
 
@@ -30,7 +30,7 @@ class UserDialog(QDialog):
         self.last_name_label = QLabel(f"{UI_LAST_NAME}:")
         self.last_name_input = QLineEdit()
 
-        self.email_label = QLabel(f"{UI_EMAIL}:")
+        self.email_label = QLabel(f"{UI_EMAIL}: ({UI_COMPANY})")
         self.email_input = QLineEdit(config.config[CFG_EMAIL])
 
         self.pin_label = QLabel(f"{UI_PIN}: ({UI_4_DIGITS})")
@@ -76,7 +76,7 @@ class UserSignup(UserDialog):
         layout = self.layout()
         self.user_group.setTitle(UI_SIGNUP)
 
-        # Add update button
+        # Add signup button
         self.signup_button = QPushButton(UI_SIGNUP)
         self.signup_button.setCursor(QCursor(Qt.PointingHandCursor))
         self.signup_button.setEnabled(False)
