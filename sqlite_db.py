@@ -9,6 +9,52 @@ from constants import (DB_USERS_ID_BASE, DB_USERS_TABLE, DB_USER_ID,
                        DB_ARCHIVED, CFG_PATH, DB_SYNC_AT)
 
 
+def add_task(sender_id, receiver_id, title, body, reference, due_at, expected_at, starred, archived, reply="", status=0):
+    """Add new task to DB"""
+    if exists(config.config[CFG_PATH]):
+        # Connect to DB
+        conn = sqlite3.connect(config.config[CFG_PATH])
+        cursor = conn.cursor()
+
+        # Insert query
+        cursor.execute(f"""
+            INSERT INTO {DB_TASKS_TABLE} (
+                {DB_SENDER_ID}, {DB_RECEIVER_ID}, {DB_TITLE}, {DB_BODY}, 
+                {DB_REFERENCE}, {DB_DUE_AT}, {DB_EXPECTED_AT}, {DB_STARRED},
+                {DB_ARCHIVED}, {DB_REPLY}, {DB_STATUS}
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (sender_id, receiver_id, title, body, reference, due_at, expected_at, starred, archived, reply, status))
+
+        # Commit changes to save the insertion
+        conn.commit()
+        conn.close()
+        return True
+    return False
+
+
+def update_task(task_id, sender_id, receiver_id, title, body, reference, due_at, expected_at, starred, archived, reply, status):
+    """Update existing task in DB"""
+    if exists(config.config[CFG_PATH]):
+        # Connect to DB
+        conn = sqlite3.connect(config.config[CFG_PATH])
+        cursor = conn.cursor()
+
+        # Update query
+        cursor.execute(f"""
+            UPDATE {DB_TASKS_TABLE}
+            SET {DB_SENDER_ID} = ?, {DB_RECEIVER_ID} = ?, {DB_TITLE} = ?, {DB_BODY} = ?, 
+                {DB_REFERENCE} = ?, {DB_DUE_AT} = ?, {DB_EXPECTED_AT} = ?, {DB_STARRED} = ?, 
+                {DB_ARCHIVED} = ?, {DB_REPLY} = ?, {DB_STATUS} = ?
+            WHERE {DB_TASK_ID} = ?
+        """, (sender_id, receiver_id, title, body, reference, due_at, expected_at, starred, archived, reply, status, task_id))
+
+        # Commit changes to save the update
+        conn.commit()
+        conn.close()
+        return True
+    return False
+
+
 def get_all_users():
     if exists(config.config[CFG_PATH]):
         # Connect to DB
@@ -185,11 +231,11 @@ def create_db():
             {DB_BODY}			TEXT,
             {DB_REFERENCE}		TEXT,
             {DB_DUE_AT}		    TEXT,
-            {DB_STARRED}		INTEGER DEFAULT 0,
+            {DB_STARRED}		INTEGER,
             {DB_STATUS}		    INTEGER,
             {DB_EXPECTED_AT}	TEXT,
             {DB_REPLY}			TEXT,
-            {DB_ARCHIVED}		INTEGER DEFAULT 0,
+            {DB_ARCHIVED}		INTEGER,
             PRIMARY KEY({DB_TASK_ID} AUTOINCREMENT),
             FOREIGN KEY({DB_SENDER_ID}) REFERENCES {DB_USERS_TABLE}({DB_USER_ID}),
             FOREIGN KEY({DB_RECEIVER_ID}) REFERENCES {DB_USERS_TABLE}({DB_USER_ID})

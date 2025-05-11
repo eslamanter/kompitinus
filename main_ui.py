@@ -7,7 +7,7 @@ from PyQt5.QtCore import Qt
 from readme_ui import ReadmeViewer
 from about_ui import AboutScreen
 from constants import *
-from sqlite_db import get_all_users
+from sqlite_db import get_all_users, add_task
 from user_ui import UserUpdate
 from utils import send_email, select_directory_dialog, get_directory, show_question_msg
 import config
@@ -25,47 +25,63 @@ class MainWindow(QMainWindow):
         self.tree_view.setModel(self.tree_model)
         self.tree_view.header().setHidden(True)
 
+        # Define custom item roles for the treeview
+        self.BOX_ROLE = Qt.UserRole
+        self.FILTER_ROLE = Qt.UserRole + 1
+        self.USER_ROLE = Qt.UserRole + 2
+
+        def create_sub_items(name):
+            item = QStandardItem(name)
+            item.setData(name, self.FILTER_ROLE)
+            return item
+
         # Create Parent Items
         my_boxes_items = QStandardItem(config.config[CFG_EMAIL])
-        all_users_item = QStandardItem(UI_ALL_USERS)
+        all_users_items = QStandardItem(UI_ALL_USERS)
 
-        # Create Child Items for Folders
+        # Create child items for my_boxes_items
         inbox_item = QStandardItem(UI_INBOX)
         outbox_item = QStandardItem(UI_OUTBOX)
         selfbox_item = QStandardItem(UI_SELFBOX)
-        starred_item = QStandardItem(UI_STARRED)
-        archived_item = QStandardItem(UI_ARCHIVEDBOX)
+
+        inbox_item.setData(UI_INBOX, self.BOX_ROLE)
+        outbox_item.setData(UI_OUTBOX, self.BOX_ROLE)
+        selfbox_item.setData(UI_SELFBOX, self.BOX_ROLE)
+
+        # Create filters for each child item
+        for box in [inbox_item, outbox_item, selfbox_item]:
+            box.appendRow((create_sub_items(UI_STARRED_BOX)))
+            box.appendRow((create_sub_items(UI_EXPIRED_BOX)))
 
         my_boxes_items.appendRow(inbox_item)
         my_boxes_items.appendRow(outbox_item)
         my_boxes_items.appendRow(selfbox_item)
-        my_boxes_items.appendRow(starred_item)
-        my_boxes_items.appendRow(archived_item)
 
-        # Get all users form DB
+        # Get all users form DB & populate users full names under all_users_items
         users = get_all_users()
 
-        # Populate users full names under all_users_item
         for user in users:
             user_id, first_name, last_name, email = user
             user_item = QStandardItem(f"{last_name} {first_name}")
-            user_item.setData(user_id, Qt.UserRole)
+            user_item.setData(user_id, self.USER_ROLE)
             user_item.setData(email, Qt.ToolTipRole)
-            all_users_item.appendRow(user_item)
+            all_users_items.appendRow(user_item)
 
-        self.tree_view.selectionModel().selectionChanged.connect(
-            lambda: self.on_item_selected(self.tree_view.selectionModel()))
+        self.tree_view.selectionModel().selectionChanged.connect(self.on_item_selected)
 
         # Add Both Parent Items to the Tree Root
         root_item = self.tree_model.invisibleRootItem()
         root_item.appendRow(my_boxes_items)
-        root_item.appendRow(all_users_item)
+        root_item.appendRow(all_users_items)
 
+        # Expand all treeview
         self.tree_view.expandAll()
 
-        # Enable custom context menu
-        self.tree_view.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.tree_view.customContextMenuRequested.connect(self.show_context_menu)
+        # Add send task to treeview user by double-click
+        self.tree_view.doubleClicked.connect(self.on_item_double_clicked)
+
+        # Disable treeview modification
+        self.set_treeview_readonly()
 
         # Create table view
         self.table_view = QTableView()
@@ -80,11 +96,11 @@ class MainWindow(QMainWindow):
         # Left column: Task ID, Created At, Modified At
         left_meta_layout = QVBoxLayout()
         self.task_id_label = QLabel(f"{UI_TASK_ID}:")
-        self.task_id_value = QLabel("12345")
+        self.task_id_value = QLabel()
         self.created_at_label = QLabel(f"{UI_CREATED_AT}:")
-        self.created_at_value = QLabel("2025-04-27 12:00")
+        self.created_at_value = QLabel()
         self.modified_at_label = QLabel(f"{UI_MODIFIED_AT}:")
-        self.modified_at_value = QLabel("2025-04-27 12:30")
+        self.modified_at_value = QLabel()
         left_meta_layout.addWidget(self.task_id_label)
         left_meta_layout.addWidget(self.task_id_value)
         left_meta_layout.addWidget(self.created_at_label)
@@ -95,13 +111,13 @@ class MainWindow(QMainWindow):
         # Right column: Sender, Receiver
         right_meta_layout = QVBoxLayout()
         self.sender_label = QLabel(f"{UI_SENDER}:")
-        self.sender_full_name = QLabel("John Doe")
-        self.sender_email = QLabel(F'<a href="#">{"example@abc.xyz"}</a>')
+        self.sender_full_name = QLabel()
+        self.sender_email = QLabel(F'<a href="#">{""}</a>')
         self.sender_email.linkActivated.connect(lambda: send_email(email="", title=f"{APP_NAME}_{UI_TASK}_{100000}")) #
 
         self.receiver_label = QLabel(f"{UI_RECEIVER}:")
-        self.receiver_full_name = QLabel("Jane Doe")
-        self.receiver_email = QLabel(f'<a href="#">{"example@abc.xyz"}</a>')
+        self.receiver_full_name = QLabel()
+        self.receiver_email = QLabel(f'<a href="#">{""}</a>')
         self.receiver_email.linkActivated.connect(lambda: send_email(email="", title=f"{APP_NAME}_{UI_TASK}_{100000}")) #
 
         right_meta_layout.addWidget(self.sender_label)
@@ -133,20 +149,29 @@ class MainWindow(QMainWindow):
         main_vertical_layout.addWidget(horizontal_line_1)
 
         # Task
-        self.task_layout = QHBoxLayout()
+        task_layout = QHBoxLayout()
         self.task_label = QLabel(f"{UI_TASK}:")
         self.starred_checkbox = QCheckBox(UI_STARRED)
-        self.task_layout.addWidget(self.task_label)
-        self.task_layout.addStretch()
-        self.task_layout.addWidget(self.starred_checkbox)
-        main_vertical_layout.addLayout(self.task_layout)
+        self.starred_checkbox.setCursor(QCursor(Qt.PointingHandCursor))
+        self.starred_checkbox.setToolTip(UI_STARRED_TIP)
+        self.archived_checkbox = QCheckBox(UI_ARCHIVED)
+        self.archived_checkbox.setCursor(QCursor(Qt.PointingHandCursor))
+        self.archived_checkbox.setToolTip(UI_ARCHIVED_TIP)
+        task_layout.addWidget(self.task_label)
+        task_layout.addStretch()
+        task_layout.addWidget(self.starred_checkbox)
+        task_layout.addWidget(self.archived_checkbox)
+        main_vertical_layout.addLayout(task_layout)
 
         # Task title input
         self.title_input = QLineEdit()
+        self.title_input.textChanged.connect(self.check_send_button)
+        self.title_input.setReadOnly(True)
         main_vertical_layout.addWidget(self.title_input)
 
         # Task body input
         self.body_input = QTextEdit()
+        self.body_input.setReadOnly(True)
         main_vertical_layout.addWidget(self.body_input)
 
         # Reference
@@ -167,18 +192,18 @@ class MainWindow(QMainWindow):
 
         # Create menu associated to menu button
         self.menu = QMenu(self)
-        open_directory_action = QAction(UI_REFERENCE_OPEN, self)
-        open_directory_action.triggered.connect(self.open_directory_dialog)
-        copy_link_action = QAction(UI_REFERENCE_COPY, self)
-        copy_link_action.triggered.connect(self.copy_reference_link)
-        paste_link_action = QAction(UI_REFERENCE_PASTE, self)
-        paste_link_action.triggered.connect(self.paste_reference_link)
-        delete_link_action = QAction(UI_REFERENCE_DELETE, self)
-        delete_link_action.triggered.connect(self.delete_reference_link)
-        self.menu.addAction(open_directory_action)
-        self.menu.addAction(copy_link_action)
-        self.menu.addAction(paste_link_action)
-        self.menu.addAction(delete_link_action)
+        self.open_directory_action = QAction(UI_REFERENCE_OPEN, self)
+        self.open_directory_action.triggered.connect(self.open_directory_dialog)
+        self.copy_link_action = QAction(UI_REFERENCE_COPY, self)
+        self.copy_link_action.triggered.connect(self.copy_reference_link)
+        self.paste_link_action = QAction(UI_REFERENCE_PASTE, self)
+        self.paste_link_action.triggered.connect(self.paste_reference_link)
+        self.delete_link_action = QAction(UI_REFERENCE_DELETE, self)
+        self.delete_link_action.triggered.connect(self.delete_reference_link)
+        self.menu.addAction(self.open_directory_action)
+        self.menu.addAction(self.copy_link_action)
+        self.menu.addAction(self.paste_link_action)
+        self.menu.addAction(self.delete_link_action)
         self.menu_button.setMenu(self.menu)
 
         # Due At
@@ -206,23 +231,20 @@ class MainWindow(QMainWindow):
         main_vertical_layout.addWidget(self.expected_at_input)
 
         # Reply
-        self.reply_layout = QHBoxLayout()
+        reply_layout = QHBoxLayout()
         self.reply_label = QLabel(f"{UI_REPLY}:")
         self.done_checkbox = QCheckBox(UI_DONE)
-        self.reply_layout.addWidget(self.reply_label)
-        self.reply_layout.addStretch()
-        self.reply_layout.addWidget(self.done_checkbox)
-        main_vertical_layout.addLayout(self.reply_layout)
+        self.done_checkbox.setCursor(QCursor(Qt.PointingHandCursor))
+        self.done_checkbox.setToolTip(UI_DONE_TIP)
+        reply_layout.addWidget(self.reply_label)
+        reply_layout.addStretch()
+        reply_layout.addWidget(self.done_checkbox)
+        main_vertical_layout.addLayout(reply_layout)
 
         # Reply input
         self.reply_input = QTextEdit()
+        self.reply_input.setReadOnly(True)
         main_vertical_layout.addWidget(self.reply_input)
-
-        # Archived checkbox
-        self.archived_layout = QHBoxLayout()
-        self.archived_checkbox = QCheckBox(UI_ARCHIVED)
-        self.archived_layout.addWidget(self.archived_checkbox)
-        main_vertical_layout.addLayout(self.archived_layout)
 
         # Add horizontal line between checkboxes and update button
         horizontal_line_3 = QFrame()
@@ -230,21 +252,22 @@ class MainWindow(QMainWindow):
         horizontal_line_3.setFrameShadow(QFrame.Sunken)
         main_vertical_layout.addWidget(horizontal_line_3)
 
-        # Add update task button
-        self.update_button_layout = QHBoxLayout()
-        self.update_button = QPushButton(UI_UPDATE)
-        self.update_button.setCursor(QCursor(Qt.PointingHandCursor))
-        self.update_button_layout.addWidget(self.update_button)
-        main_vertical_layout.addLayout(self.update_button_layout)
+        # Add send task button
+        self.send_button_layout = QHBoxLayout()
+        self.send_button = QPushButton(UI_SEND)
+        self.send_button.setCursor(QCursor(Qt.PointingHandCursor))
+        self.send_button_layout.addWidget(self.send_button)
+        self.send_button.clicked.connect(self.send_task)
+        main_vertical_layout.addLayout(self.send_button_layout)
 
         # Wrap everything in a QWidget for the splitter
-        task_details_widget = QWidget()
-        task_details_widget.setLayout(main_vertical_layout)
+        self.task_details_widget = QWidget(self)
+        self.task_details_widget.setLayout(main_vertical_layout)
 
         # Create a splitter and add tree/table views and task details widget
         self.right_splitter = QSplitter(Qt.Horizontal)
         self.right_splitter.addWidget(self.left_splitter)
-        self.right_splitter.addWidget(task_details_widget)
+        self.right_splitter.addWidget(self.task_details_widget)
 
         # Set the splitter as the main layout
         central_layout = QVBoxLayout(central_widget)
@@ -264,6 +287,8 @@ class MainWindow(QMainWindow):
         synchronize_action = QAction(UI_SYNCHRONIZE, self)
         sync_menu.addAction(synchronize_action)
                 # Autosync
+        auto_group = QActionGroup(self)
+        auto_group.setExclusive(True)
         auto_menu = sync_menu.addMenu(UI_AUTO_MENU)
         min01_action = QAction(UI_MIN01, self)
         min05_action = QAction(UI_MIN05, self)
@@ -272,13 +297,11 @@ class MainWindow(QMainWindow):
         min30_action = QAction(UI_MIN30, self)
         min60_action = QAction(UI_MIN60, self)
         never_action = QAction(UI_NEVER, self)
-        auto_menu.addAction(min01_action)
-        auto_menu.addAction(min05_action)
-        auto_menu.addAction(min10_action)
-        auto_menu.addAction(min15_action)
-        auto_menu.addAction(min30_action)
-        auto_menu.addAction(min60_action)
-        auto_menu.addAction(never_action)
+        for action in [min01_action, min05_action, min10_action, min15_action, min30_action, min60_action, never_action]:
+            action.setCheckable(True)
+            auto_group.addAction(action)
+            auto_menu.addAction(action)
+        never_action.setChecked(True)
             # Export Menu
         export_menu = menu_bar.addMenu(UI_EXPORT_MENU)
                 # Personal
@@ -305,37 +328,139 @@ class MainWindow(QMainWindow):
         self.adjustSize()
         self.center()
 
+        # List of Send & Receive Widgets
+        self.inbox_disabled_elements = [self.starred_checkbox, self.archived_checkbox,
+                                        self.title_input, self.body_input, self.due_at_input, self.send_button,
+                                        self.open_directory_action, self.paste_link_action, self.delete_link_action]
+
+        self.outbox_disabled_elements = [self.expected_at_input, self.done_checkbox, self.reply_input, self.send_button]
+        self.send_disabled_elements = [self.done_checkbox, self.reply_label, self.reply_input, self.send_button,
+                                       self.task_id_label, self.task_id_value, self.created_at_label,
+                                       self.created_at_value, self.modified_at_label, self.modified_at_value]
+
+        self.set_task_details_disabled()
+
         # Placeholders
         self.about_ui = None
         self.readme_ui = None
         self.update_ui = None
 
-    def on_item_selected(self, selection_model):
-        for index in selection_model.selectedIndexes():
-            user_id = index.data(Qt.UserRole)  # Retrieve stored user ID
+        # Attributes
+        self.current_task_id = None
+
+    def set_treeview_readonly(self):
+        """Disable editing for all items in the tree view."""
+        for row in range(self.tree_model.rowCount()):
+            parent_item = self.tree_model.item(row)
+            parent_item.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)  # No editing
+
+            for child_row in range(parent_item.rowCount()):
+                child_item = parent_item.child(child_row)
+                child_item.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)  # No editing
+
+                for sub_row in range(child_item.rowCount()):
+                    sub_item = child_item.child(sub_row)
+                    sub_item.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)  # No editing
+
+    def check_send_button(self):
+        """Enables send button based if task title is non-empty, otherwise, disables it."""
+        if self.title_input.text().strip():
+            self.send_button.setEnabled(True)
+        else:
+            self.send_button.setEnabled(False)
+
+    def on_item_selected(self):
+        """Handles selecting a user item in the TreeView."""
+        index = self.tree_view.selectionModel().currentIndex()
+
+        user_id = index.data(self.USER_ROLE)
+        box_type = index.data(self.BOX_ROLE)
+        filter_type = index.data(self.FILTER_ROLE)
+
+        if user_id:
             print(f"Selected User ID: {user_id}")
+        elif box_type:
+            print(f"Selected Box: {box_type}")
+        elif filter_type:
+            parent_index = index.parent()
+            box_type = parent_index.data(self.BOX_ROLE)
+            print(f"Selected Filter: {filter_type} of Box: {box_type}")
 
-    def show_context_menu(self, position):
-        """Display right-click menu."""
-        index = self.tree_view.indexAt(position)
-        if not index.isValid():
-            return  # Ignore if no item is clicked
-
-        user_id = index.data(Qt.UserRole)  # Retrieve stored user ID
-        if user_id is None:
-            return  # Ignore if clicked item is not a user
-
-        # Create Context Menu
-        menu = QMenu(self)
-        send_task_action = QAction(UI_SEND_TASK, self)
-        send_task_action.triggered.connect(lambda: self.send_task(user_id))
-
-        menu.addAction(send_task_action)
-        menu.exec(self.tree_view.viewport().mapToGlobal(position))
+    def on_item_double_clicked(self, index):
+        """Handles double-clicking a user item in the TreeView."""
+        user_id = index.data(self.USER_ROLE)
+        if user_id:
+            self.set_send_mode(user_id)
 
     def send_task(self, user_id):
-        print('from', config.my_id)
-        print('to', user_id)
+        if self.task_id_value.text():
+            pass
+        else:
+            # add_task(sender_id=config.my_id,
+            #          receiver_id=user_id,
+            #          title="",
+            #          body="",
+            #          reference="",
+            #          due_at="",
+            #          expected_at="",
+            #          starred=0,
+            #          archived=0)
+            pass
+
+    def get_inbox(self):
+        self.set_inbox_mode()
+
+    def get_outbox(self):
+        self.set_outbox_mode()
+
+    def get_selfbox(self):
+        self.set_selfbox_mode()
+
+    def get_starred_box(self):
+        pass
+
+    def get_expired_box(self):
+        pass
+
+    def set_task_details_disabled(self):
+        for element in self.task_details_widget.findChildren(QWidget):
+            element.setEnabled(False)
+
+    def set_task_details_enabled(self):
+        for element in self.task_details_widget.findChildren(QWidget):
+            element.setEnabled(True)
+
+    def set_inbox_mode(self):
+        self.set_task_details_enabled()
+        self.title_input.setReadOnly(True)
+        self.body_input.setReadOnly(True)
+        self.reply_input.setReadOnly(False)
+        for element in self.inbox_disabled_elements:
+            element.setEnabled(False)
+
+    def set_outbox_mode(self):
+        self.set_task_details_enabled()
+        self.title_input.setReadOnly(False)
+        self.body_input.setReadOnly(False)
+        self.reply_input.setReadOnly(True)
+        for element in self.outbox_disabled_elements:
+            element.setEnabled(False)
+
+    def set_selfbox_mode(self):
+        self.set_task_details_enabled()
+        self.title_input.setReadOnly(False)
+        self.body_input.setReadOnly(False)
+        self.reply_input.setReadOnly(False)
+
+    def set_send_mode(self, receiver_id):
+        self.current_task_id = None
+        print(f'Receiver ID: {receiver_id}')
+        self.set_task_details_enabled()
+        self.title_input.setReadOnly(False)
+        self.body_input.setReadOnly(False)
+        self.reply_input.setReadOnly(True)
+        for element in self.send_disabled_elements:
+            element.setEnabled(False)
 
     def open_directory_dialog(self):
         directory_path = select_directory_dialog(parent=self, default_dir=get_directory(config.config[CFG_PATH]))

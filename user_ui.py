@@ -177,6 +177,8 @@ class UserUpdate(UserDialog):
         layout.addLayout(logout_layout)
 
         self.get_user_info()
+        self.update_button.setEnabled(False)
+
         self.setLayout(layout)
         self.adjustSize()
 

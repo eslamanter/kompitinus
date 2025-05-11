@@ -85,19 +85,22 @@ UI_HELP = "Guida"
 UI_INBOX = "Inbox"
 UI_OUTBOX = "Outbox"
 UI_SELFBOX = "Selfbox"
-UI_STARREDBOX = "Contrassegnato"
-UI_ARCHIVEDBOX = "Archivio"
+UI_STARRED_BOX = "Contrassegnati"
+UI_EXPIRED_BOX = "Scaduti"
 UI_ALL_USERS = "Utenti"
-UI_SEND_TASK = "Assegna compito"
+UI_SEND_TASK = "Invia un compito"
 
     # Task details panel
-UI_TASK_ID = "ID compito"
+UI_TASK_ID = "ID"
 UI_CREATED_AT = "Creato il"
 UI_MODIFIED_AT = "Modificato il"
 UI_SENDER = "Da"
 UI_RECEIVER = "A"
 UI_TASK = "Compito"
 UI_STARRED = "Contrassegnato"
+UI_STARRED_TIP = "Contrassegnato Tip"
+UI_ARCHIVED = "Archiviato"
+UI_ARCHIVED_TIP = "Archiviato Tip"
 
 UI_REFERENCE = "Riferimento"
 UI_REFERENCE_OPEN = "Seleziona cartella"
@@ -110,8 +113,8 @@ UI_EXPECTED_AT = "Previsto il"
 UI_DAYS = "gg"
 UI_REPLY = "Risposta"
 UI_DONE = "Fatto"
-UI_ARCHIVED = "Archiviato"
-UI_UPDATE = "Aggiorna"
+UI_DONE_TIP = "Fatto Tip"
+UI_SEND = "Invia"
 
     # Statusbar
 UI_SELECTED = "Selezionato"
@@ -140,6 +143,7 @@ UI_COMPANY = "Aziendale"
 UI_4_DIGITS = "4 Cifre"
 
     # Update User UI
+UI_UPDATE = "Aggiorna"
 UI_LOGOUT = "Esci"
 
     # About
