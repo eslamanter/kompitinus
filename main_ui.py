@@ -1,16 +1,49 @@
 import sys
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QFrame, QTableView, QSplitter, QLineEdit,
-    QTextEdit, QCheckBox, QPushButton, QDateTimeEdit, QTreeView, QStatusBar, QMenu, QAction, QToolButton, QActionGroup)
-from PyQt5.QtGui import QStandardItemModel, QStandardItem, QCursor
-from PyQt5.QtCore import Qt
+    QTextEdit, QCheckBox, QPushButton, QDateTimeEdit, QTreeView, QStatusBar, QMenu, QAction, QToolButton, QActionGroup,
+    QHeaderView, QAbstractItemView)
+from PyQt5.QtGui import QStandardItemModel, QStandardItem, QCursor, QBrush, QColor
+from PyQt5.QtCore import Qt, QDateTime, QTime
 from readme_ui import ReadmeViewer
 from about_ui import AboutScreen
 from constants import *
-from sqlite_db import get_all_users, add_task
+from sqlite_db import get_all_users, add_task, update_task, get_received_tasks
 from user_ui import UserUpdate
-from utils import send_email, select_directory_dialog, get_directory, show_question_msg
+from utils import send_email, select_directory_dialog, get_directory, show_question_msg, next_working_midday
 import config
+
+
+class TaskTableModel(QStandardItemModel):
+    def __init__(self, tasks, parent=None):
+        super().__init__(parent)
+        self.setHorizontalHeaderLabels([UI_TASK_ID, UI_MODIFIED_AT, UI_SENDER, UI_RECEIVER, UI_TASK, UI_DUE_AT])
+
+        self.ID_ROLE = Qt.UserRole
+        self.STARRED_ROLE = Qt.UserRole + 1
+        self.ARCHIVED_ROLE = Qt.UserRole + 2
+        self.DONE_ROLE = Qt.UserRole + 3
+        self.EXPIRED_ROLE = Qt.UserRole + 4
+
+        for task in tasks:
+            (task_id, modified_at, title, due_at,
+             sender_first_name, sender_last_name, receiver_first_name, receiver_last_name) = task
+            sender_full_name = f"{sender_first_name} {sender_last_name}"
+            receiver_full_name = f"{receiver_first_name} {receiver_last_name}"
+
+            task_id_item = QStandardItem(str(task_id))
+            modified_at_item = QStandardItem(modified_at)
+            sender_full_name_item = QStandardItem(sender_full_name)
+            receiver_full_name_item = QStandardItem(receiver_full_name)
+            title_item = QStandardItem(title)
+            due_at_item = QStandardItem(due_at)
+
+            for item in ([task_id_item, modified_at_item, sender_full_name_item, receiver_full_name_item,
+                            title_item, due_at_item]):
+                item.setBackground((QBrush(QColor(255, 204, 203))))
+
+            self.appendRow([task_id_item, modified_at_item, sender_full_name_item, receiver_full_name_item,
+                            title_item, due_at_item])
 
 
 class MainWindow(QMainWindow):
@@ -85,6 +118,9 @@ class MainWindow(QMainWindow):
 
         # Create table view
         self.table_view = QTableView()
+        self.table_view.setSelectionBehavior(QTableView.SelectRows)  # Selects the entire row
+        self.table_view.setSelectionMode(QAbstractItemView.SingleSelection)  # Allows only one row at a time
+        self.table_view.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
         # Create a splitter and add both tree view and table view
         self.left_splitter = QSplitter(Qt.Horizontal)
@@ -214,6 +250,8 @@ class MainWindow(QMainWindow):
         due_at_layout.addWidget(self.due_at_label)
         due_at_layout.addWidget(self.due_at_days)
         self.due_at_input = QDateTimeEdit()
+        self.due_at_input.setDateTime(next_working_midday())
+        self.due_at_input.setDisplayFormat("yyyy-MM-dd HH:mm:ss")
         self.due_at_input.setCalendarPopup(True)
         main_vertical_layout.addLayout(due_at_layout)
         main_vertical_layout.addWidget(self.due_at_input)
@@ -226,6 +264,8 @@ class MainWindow(QMainWindow):
         expected_at_layout.addWidget(self.expected_at_label)
         expected_at_layout.addWidget(self.expected_at_days)
         self.expected_at_input = QDateTimeEdit()
+        self.expected_at_input.setDateTime(next_working_midday())
+        self.expected_at_input.setDisplayFormat("yyyy-MM-dd HH:mm:ss")
         self.expected_at_input.setCalendarPopup(True)
         main_vertical_layout.addLayout(expected_at_layout)
         main_vertical_layout.addWidget(self.expected_at_input)
@@ -282,26 +322,6 @@ class MainWindow(QMainWindow):
         user_data_action = QAction(UI_USER_DATA, self)
         user_data_action.triggered.connect(self.show_user)
         user_menu.addAction(user_data_action)
-            # Task Sync
-        sync_menu = menu_bar.addMenu(UI_SYNC_MENU)
-        synchronize_action = QAction(UI_SYNCHRONIZE, self)
-        sync_menu.addAction(synchronize_action)
-                # Autosync
-        auto_group = QActionGroup(self)
-        auto_group.setExclusive(True)
-        auto_menu = sync_menu.addMenu(UI_AUTO_MENU)
-        min01_action = QAction(UI_MIN01, self)
-        min05_action = QAction(UI_MIN05, self)
-        min10_action = QAction(UI_MIN10, self)
-        min15_action = QAction(UI_MIN15, self)
-        min30_action = QAction(UI_MIN30, self)
-        min60_action = QAction(UI_MIN60, self)
-        never_action = QAction(UI_NEVER, self)
-        for action in [min01_action, min05_action, min10_action, min15_action, min30_action, min60_action, never_action]:
-            action.setCheckable(True)
-            auto_group.addAction(action)
-            auto_menu.addAction(action)
-        never_action.setChecked(True)
             # Export Menu
         export_menu = menu_bar.addMenu(UI_EXPORT_MENU)
                 # Personal
@@ -347,6 +367,7 @@ class MainWindow(QMainWindow):
 
         # Attributes
         self.current_task_id = None
+        self.new_receiver_id = None
 
     def set_treeview_readonly(self):
         """Disable editing for all items in the tree view."""
@@ -380,7 +401,10 @@ class MainWindow(QMainWindow):
         if user_id:
             print(f"Selected User ID: {user_id}")
         elif box_type:
-            print(f"Selected Box: {box_type}")
+            if box_type == UI_INBOX:
+                tasks = get_received_tasks(config.my_id)
+                model = TaskTableModel(tasks)
+                self.table_view.setModel(model)
         elif filter_type:
             parent_index = index.parent()
             box_type = parent_index.data(self.BOX_ROLE)
@@ -390,22 +414,35 @@ class MainWindow(QMainWindow):
         """Handles double-clicking a user item in the TreeView."""
         user_id = index.data(self.USER_ROLE)
         if user_id:
-            self.set_send_mode(user_id)
+            self.new_receiver_id = user_id
+            self.set_send_mode()
 
-    def send_task(self, user_id):
-        if self.task_id_value.text():
-            pass
+    def send_task(self):
+        if self.current_task_id:
+            update_result = update_task(sender_id=config.my_id,
+                                        receiver_id=self.new_receiver_id,
+                                        title=self.title_input.text(),
+                                        body=self.body_input.toPlainText(),
+                                        reference=self.reference_label.toolTip(),
+                                        due_at=self.due_at_input.text(),
+                                        expected_at=self.expected_at_input,
+                                        starred=1 if self.starred_checkbox.isChecked() else 0,
+                                        archived=1 if self.archived_checkbox.isChecked() else 0,
+                                        reply=self.reply_input.text(),
+                                        done=1 if self.done_checkbox.isChecked() else 0,
+                                        task_id=self.current_task_id)
+            print(update_result)
         else:
-            # add_task(sender_id=config.my_id,
-            #          receiver_id=user_id,
-            #          title="",
-            #          body="",
-            #          reference="",
-            #          due_at="",
-            #          expected_at="",
-            #          starred=0,
-            #          archived=0)
-            pass
+            new_task_id = add_task(sender_id=config.my_id,
+                                   receiver_id=self.new_receiver_id,
+                                   title=self.title_input.text(),
+                                   body=self.body_input.toPlainText(),
+                                   reference=self.reference_label.toolTip(),
+                                   due_at=self.due_at_input.text(),
+                                   expected_at=self.expected_at_input.text(),
+                                   starred=1 if self.starred_checkbox.isChecked() else 0,
+                                   archived=1 if self.archived_checkbox.isChecked() else 0)
+            print(new_task_id)
 
     def get_inbox(self):
         self.set_inbox_mode()
@@ -452,9 +489,10 @@ class MainWindow(QMainWindow):
         self.body_input.setReadOnly(False)
         self.reply_input.setReadOnly(False)
 
-    def set_send_mode(self, receiver_id):
+    def set_send_mode(self):
         self.current_task_id = None
-        print(f'Receiver ID: {receiver_id}')
+        self.due_at_input.setDateTime(next_working_midday())
+        self.expected_at_input.setDateTime(next_working_midday())
         self.set_task_details_enabled()
         self.title_input.setReadOnly(False)
         self.body_input.setReadOnly(False)

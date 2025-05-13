@@ -183,9 +183,9 @@ class UserUpdate(UserDialog):
         self.adjustSize()
 
     def get_user_info(self):
-        user_info = get_user_full_name(config.my_id)
-        if user_info:
-            first_name, last_name = user_info
+        user_name = get_user_full_name(config.my_id)
+        if user_name:
+            first_name, last_name = user_name
             self.first_name_input.setText(first_name)
             self.last_name_input.setText(last_name)
             self.email_input.setText(config.config[CFG_EMAIL])

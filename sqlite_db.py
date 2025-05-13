@@ -5,8 +5,37 @@ from utils import exists
 from constants import (DB_USERS_ID_BASE, DB_USERS_TABLE, DB_USER_ID,
                        DB_FIRST_NAME, DB_LAST_NAME, DB_EMAIL, DB_PIN, DB_REGISTERED_AT, DB_ACTIVE, DB_TASKS_ID_BASE,
                        DB_TASKS_TABLE, DB_TASK_ID, DB_SENDER_ID, DB_RECEIVER_ID, DB_CREATED_AT, DB_MODIFIED_AT,
-                       DB_TITLE, DB_BODY, DB_REFERENCE, DB_DUE_AT, DB_STARRED, DB_STATUS, DB_EXPECTED_AT, DB_REPLY,
+                       DB_TITLE, DB_BODY, DB_REFERENCE, DB_DUE_AT, DB_STARRED, DB_DONE, DB_EXPECTED_AT, DB_REPLY,
                        DB_ARCHIVED, CFG_PATH, DB_SYNC_AT)
+
+
+def get_received_tasks(user_id):
+    if exists(config.config[CFG_PATH]):
+        # Connect to DB
+        conn = sqlite3.connect(config.config[CFG_PATH])
+        cursor = conn.cursor()
+
+        cursor.execute(f"""
+            SELECT 
+                t.{DB_TASK_ID}, 
+                t.{DB_MODIFIED_AT}, 
+                t.{DB_TITLE}, 
+                t.{DB_DUE_AT}, 
+                sender.{DB_FIRST_NAME} AS sender_first_name, 
+                sender.{DB_LAST_NAME} AS sender_last_name,
+                receiver.{DB_FIRST_NAME} AS receiver_first_name, 
+                receiver.{DB_LAST_NAME} AS receiver_last_name
+            FROM {DB_TASKS_TABLE} AS t
+            JOIN {DB_USERS_TABLE} AS sender
+            ON t.{DB_SENDER_ID} = sender.{DB_USER_ID}
+            JOIN {DB_USERS_TABLE} AS receiver
+            ON t.{DB_RECEIVER_ID} = receiver.{DB_USER_ID}
+            WHERE t.{DB_RECEIVER_ID} = ?
+            ORDER BY t.{DB_MODIFIED_AT} DESC
+        """, (user_id,))
+
+        return cursor.fetchall()
+    return True
 
 
 def add_task(sender_id, receiver_id, title, body, reference, due_at, expected_at, starred, archived, reply="", status=0):
@@ -21,18 +50,18 @@ def add_task(sender_id, receiver_id, title, body, reference, due_at, expected_at
             INSERT INTO {DB_TASKS_TABLE} (
                 {DB_SENDER_ID}, {DB_RECEIVER_ID}, {DB_TITLE}, {DB_BODY}, 
                 {DB_REFERENCE}, {DB_DUE_AT}, {DB_EXPECTED_AT}, {DB_STARRED},
-                {DB_ARCHIVED}, {DB_REPLY}, {DB_STATUS}
+                {DB_ARCHIVED}, {DB_REPLY}, {DB_DONE}
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (sender_id, receiver_id, title, body, reference, due_at, expected_at, starred, archived, reply, status))
 
         # Commit changes to save the insertion
         conn.commit()
         conn.close()
-        return True
+        return cursor.lastrowid
     return False
 
 
-def update_task(task_id, sender_id, receiver_id, title, body, reference, due_at, expected_at, starred, archived, reply, status):
+def update_task(task_id, sender_id, receiver_id, title, body, reference, due_at, expected_at, starred, archived, reply, done):
     """Update existing task in DB"""
     if exists(config.config[CFG_PATH]):
         # Connect to DB
@@ -44,9 +73,9 @@ def update_task(task_id, sender_id, receiver_id, title, body, reference, due_at,
             UPDATE {DB_TASKS_TABLE}
             SET {DB_SENDER_ID} = ?, {DB_RECEIVER_ID} = ?, {DB_TITLE} = ?, {DB_BODY} = ?, 
                 {DB_REFERENCE} = ?, {DB_DUE_AT} = ?, {DB_EXPECTED_AT} = ?, {DB_STARRED} = ?, 
-                {DB_ARCHIVED} = ?, {DB_REPLY} = ?, {DB_STATUS} = ?
+                {DB_ARCHIVED} = ?, {DB_REPLY} = ?, {DB_DONE} = ?
             WHERE {DB_TASK_ID} = ?
-        """, (sender_id, receiver_id, title, body, reference, due_at, expected_at, starred, archived, reply, status, task_id))
+        """, (sender_id, receiver_id, title, body, reference, due_at, expected_at, starred, archived, reply, done, task_id))
 
         # Commit changes to save the update
         conn.commit()
@@ -88,7 +117,7 @@ def email_exists(email):
 
 
 def get_user_full_name(user_id):
-    """Retrieves first name, last name, and email for the given user ID."""
+    """Retrieves full name for the given user ID."""
 
     try:
         # Connect to the database
@@ -232,7 +261,7 @@ def create_db():
             {DB_REFERENCE}		TEXT,
             {DB_DUE_AT}		    TEXT,
             {DB_STARRED}		INTEGER,
-            {DB_STATUS}		    INTEGER,
+            {DB_DONE}		    INTEGER,
             {DB_EXPECTED_AT}	TEXT,
             {DB_REPLY}			TEXT,
             {DB_ARCHIVED}		INTEGER,

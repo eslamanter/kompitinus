@@ -2,11 +2,16 @@ import json
 import os
 from PyQt5.QtWidgets import QMessageBox, QFileDialog
 from PyQt5.QtGui import QDesktopServices
-from PyQt5.QtCore import QUrl
+from PyQt5.QtCore import QUrl, QDateTime, QTime
 from constants import DEV_EMAIL, APP_NAME, APP_VERSION, MSG_SELECT_DIR, MSG_SELECT_FILE, CFG_FILE
 import winsound
 import config
 
+
+def next_working_midday():
+    tomorrow_date = QDateTime.currentDateTime().addDays(1)
+    tomorrow_date.setTime(QTime(12, 0, 0))
+    return tomorrow_date
 
 def read_config():
     with open(CFG_FILE, "r") as file:
