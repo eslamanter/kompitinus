@@ -7,7 +7,26 @@ from constants import (DB_USERS_ID_BASE, DB_USERS_TABLE, DB_USER_ID,
                        DB_FIRST_NAME, DB_LAST_NAME, DB_EMAIL, DB_PIN, DB_REGISTERED_AT, DB_ACTIVE, DB_TASKS_ID_BASE,
                        DB_TASKS_TABLE, DB_TASK_ID, DB_SENDER_ID, DB_RECEIVER_ID, DB_CREATED_AT, DB_MODIFIED_AT,
                        DB_TITLE, DB_BODY, DB_REFERENCE, DB_DUE_AT, DB_STARRED, DB_DONE, DB_EXPECTED_AT, DB_REPLY,
-                       DB_ARCHIVED, CFG_PATH, DB_SYNC_AT, UI_INBOX, UI_OUTBOX, UI_EXPIRED_BOX, UI_STARRED_BOX)
+                       DB_ARCHIVED, CFG_PATH, DB_SEEN_AT, UI_INBOX, UI_OUTBOX, UI_EXPIRED_BOX, UI_STARRED_BOX)
+
+
+def get_task_details(task_id):
+    if exists(config.config[CFG_PATH]):
+        # Connect to DB
+        conn = sqlite3.connect(config.config[CFG_PATH])
+        cursor = conn.cursor()
+
+        # Query to fetch the task by ID
+        cursor.execute(f"SELECT * FROM {DB_TASKS_TABLE} WHERE {DB_TASK_ID} = ?", (task_id,))
+
+        # Fetch the result
+        task_data = cursor.fetchone()
+
+        # Close the connection
+        conn.close()
+
+        return task_data
+    return False
 
 
 def get_tasks(user_id, box_type, filter_type=None):
@@ -155,6 +174,34 @@ def email_exists(email):
     return result
 
 
+def get_user_email(user_id):
+    """Retrieves email for the given user ID."""
+
+    try:
+        # Connect to the database
+        conn = sqlite3.connect(config.config[CFG_PATH])
+        cursor = conn.cursor()
+
+        # Query to fetch user details
+        cursor.execute(f"""
+            SELECT {DB_EMAIL}
+            FROM {DB_USERS_TABLE}
+            WHERE {DB_USER_ID} = ?
+        """, (user_id,))
+
+        # Fetch the result
+        user_info = cursor.fetchone()
+
+        # Close connection
+        conn.close()
+
+        # Return the user info if found
+        return user_info[0] if user_info else None
+
+    except sqlite3.Error as e:
+        return None
+
+
 def get_user_full_name(user_id):
     """Retrieves full name for the given user ID."""
 
@@ -234,32 +281,27 @@ def check_login(email, pin):
     """Verifies login by checking email-based user ID and hashed PIN."""
 
     if exists(config.config[CFG_PATH]):  # Ensure database exists
-        try:
-            # Connect to main DB
-            conn = sqlite3.connect(config.config[CFG_PATH])
-            cursor = conn.cursor()
+        # Connect to main DB
+        conn = sqlite3.connect(config.config[CFG_PATH])
+        cursor = conn.cursor()
 
-            # Retrieve user ID and hashed PIN from registered email
-            cursor.execute(f"SELECT {DB_USER_ID}, {DB_PIN} FROM {DB_USERS_TABLE} WHERE {DB_EMAIL} = ?",
-                           (email,))
-            result = cursor.fetchone()
+        # Retrieve user ID and hashed PIN from registered email
+        cursor.execute(f"SELECT {DB_USER_ID}, {DB_PIN} FROM {DB_USERS_TABLE} WHERE {DB_EMAIL} = ?",
+                       (email,))
+        result = cursor.fetchone()
 
-            if result:
-                user_id, hashed_pin = result  # Extract user ID and hashed PIN
-                raw = pin.encode('utf-8')  # Convert input PIN to bytes
+        if result:
+            user_id, hashed_pin = result  # Extract user ID and hashed PIN
+            raw = pin.encode('utf-8')  # Convert input PIN to bytes
 
-                # Securely check hashed PIN
-                if bcrypt.checkpw(raw, hashed_pin):
+            # Securely check hashed PIN
+            if bcrypt.checkpw(raw, hashed_pin):
+                config.my_id = user_id
+                return True  # Successful login
 
-                    config.my_id = user_id
-                    return True  # Successful login
+            return False  # Incorrect PIN
 
-                return False  # Incorrect PIN
-
-            return None  # Invalid email (not registered)
-
-        except sqlite3.Error as e:
-            return None
+        return None  # Invalid email (not registered)
 
     return None  # Database file inaccessible or doesn't exist
 
@@ -280,7 +322,7 @@ def create_db():
             {DB_LAST_NAME}      TEXT NOT NULL,
             {DB_EMAIL}          TEXT NOT NULL UNIQUE,
             {DB_PIN}            BLOB NOT NULL,
-            {DB_SYNC_AT}        TEXT DEFAULT (datetime('now', 'localtime')),
+            {DB_SEEN_AT}        TEXT DEFAULT (datetime('now', 'localtime')),
             {DB_REGISTERED_AT}  TEXT DEFAULT (datetime('now', 'localtime')),
             {DB_ACTIVE}         INTEGER DEFAULT 1,
             PRIMARY KEY({DB_USER_ID} AUTOINCREMENT)

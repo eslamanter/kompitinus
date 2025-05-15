@@ -8,7 +8,8 @@ from PyQt5.QtCore import Qt, QDateTime
 from readme_ui import ReadmeViewer
 from about_ui import AboutScreen
 from constants import *
-from sqlite_db import get_all_users, add_task, update_task, get_tasks
+from sqlite_db import get_all_users, add_task, update_task, get_tasks, get_task_details, get_user_full_name, \
+    get_user_email
 from user_ui import UserUpdate
 from utils import send_email, select_directory_dialog, get_directory, show_question_msg, next_working_midday
 import config
@@ -19,8 +20,6 @@ class TaskTableModel(QStandardItemModel):
         super().__init__(parent)
         self.setHorizontalHeaderLabels([UI_TASK_ID, UI_MODIFIED_AT, UI_SENDER, UI_RECEIVER, UI_TASK, UI_DUE_AT, UI_NOTES])
 
-        self.ID_ROLE = Qt.UserRole
-
         current_time = QDateTime.currentDateTime().toString("yyyy-MM-dd HH:mm:ss")
 
         for task in tasks:
@@ -30,7 +29,7 @@ class TaskTableModel(QStandardItemModel):
             receiver_full_name = f"{receiver_first_name}\n{receiver_last_name}"
 
             task_id_item = QStandardItem(str(task_id))
-            task_id_item.setData(task_id, self.ID_ROLE)
+            task_id_item.setData(task_id, Qt.UserRole)
 
             modified_at_item = QStandardItem(modified_at.replace(" ", "\n"))
             sender_full_name_item = QStandardItem(sender_full_name)
@@ -121,7 +120,7 @@ class MainWindow(QMainWindow):
             user_item.setData(email, Qt.ToolTipRole)
             all_users_items.appendRow(user_item)
 
-        self.tree_view.selectionModel().selectionChanged.connect(self.on_item_selected)
+        self.tree_view.selectionModel().selectionChanged.connect(self.on_tree_item_selected)
 
         # Add Both Parent Items to the Tree Root
         root_item = self.tree_model.invisibleRootItem()
@@ -303,6 +302,7 @@ class MainWindow(QMainWindow):
 
         # Reply input
         self.reply_input = QTextEdit()
+        self.reply_input.textChanged.connect(self.check_send_button)
         self.reply_input.setReadOnly(True)
         main_vertical_layout.addWidget(self.reply_input)
 
@@ -370,17 +370,25 @@ class MainWindow(QMainWindow):
         self.adjustSize()
         self.center()
 
-        # List of Send & Receive Widgets
-        self.inbox_disabled_elements = [self.starred_checkbox, self.archived_checkbox,
-                                        self.title_input, self.body_input, self.due_at_input, self.send_button,
-                                        self.open_directory_action, self.paste_link_action, self.delete_link_action]
-
-        self.outbox_disabled_elements = [self.expected_at_input, self.done_checkbox, self.reply_input, self.send_button]
+        # Lists of UI elements to be disabled for inbox, outbox and send modes
+        self.inbox_disabled_elements = [self.starred_checkbox, self.archived_checkbox, self.due_at_input,
+                                        self.send_button, self.open_directory_action,
+                                        self.paste_link_action, self.delete_link_action]
+        self.outbox_disabled_elements = [self.expected_at_input, self.done_checkbox, self.send_button]
         self.send_disabled_elements = [self.done_checkbox, self.reply_label, self.reply_input, self.send_button,
                                        self.task_id_label, self.task_id_value, self.created_at_label,
                                        self.created_at_value, self.modified_at_label, self.modified_at_value]
 
-        self.set_task_details_disabled()
+        # Lists of UI elements to be reset and cleared in clear mode
+        self.task_actions = [self.open_directory_action, self.copy_link_action, self.paste_link_action,
+                             self.delete_link_action]
+        self.clearable_elements = [self.task_id_value, self.created_at_value, self.modified_at_value,
+                                   self.sender_full_name, self.sender_email, self.receiver_full_name,
+                                   self.receiver_email, self.title_input, self.body_input, self.due_at_days,
+                                   self.expected_at_days, self.reply_input]
+        self.resettable_checkboxes = [self.starred_checkbox, self.archived_checkbox, self.done_checkbox]
+
+        self.set_clear_mode() # Initially clear task details panel
 
         # Placeholders
         self.about_ui = None
@@ -406,13 +414,56 @@ class MainWindow(QMainWindow):
                     sub_item.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)  # No editing
 
     def check_send_button(self):
-        """Enables send button based if task title is non-empty, otherwise, disables it."""
-        if self.title_input.text().strip():
-            self.send_button.setEnabled(True)
-        else:
-            self.send_button.setEnabled(False)
+        """Enables send button based if task title is not empty, otherwise, disables it."""
+        if self.reply_input.isReadOnly():
+            if self.title_input.text().strip():
+                self.send_button.setEnabled(True)
+            else:
+                self.send_button.setEnabled(False)
+        elif self.title_input.isReadOnly():
+            if self.reply_input.toPlainText().strip():
+                self.send_button.setEnabled(True)
+            else:
+                self.send_button.setEnabled(False)
 
-    def on_item_selected(self):
+    def on_table_row_selected(self):
+        """Retrieve task ID from the selected row """
+        index = self.table_view.selectionModel().currentIndex()
+        id_col_index =  self.table_view.model().index(index.row(), 0)
+        self.current_task_id = self.table_view.model().data(id_col_index, Qt.UserRole)
+        task_details = get_task_details(self.current_task_id)
+
+        self.task_id_value.setText(str(task_details[0]))
+        sender_first_name,  sender_last_name = get_user_full_name(task_details[1])
+        self.sender_full_name.setText(f"{sender_first_name} {sender_last_name}")
+        self.sender_email.setText(get_user_email(task_details[1]))
+        receiver_first_name, receiver_last_name = get_user_full_name(task_details[2])
+        self.receiver_full_name.setText(f"{receiver_first_name} {receiver_last_name}")
+        self.receiver_email.setText(get_user_email(task_details[2]))
+        self.created_at_value.setText(task_details[3])
+        self.modified_at_value.setText(task_details[4])
+        self.title_input.setText(task_details[5])
+        self.body_input.setText(task_details[6])
+        self.reference_label.setText(f'<a href={task_details[7]}>{UI_REFERENCE}:</a>')
+        self.reference_label.setToolTip(task_details[7])
+        self.due_at_input.setDateTime(QDateTime.fromString(task_details[8],"yyyy-MM-dd HH:mm:ss"))
+        if task_details[9]:
+            self.starred_checkbox.setChecked(True)
+        else:
+            self.starred_checkbox.setChecked(False)
+        if task_details[10]:
+            self.done_checkbox.setChecked(True)
+        else:
+            self.done_checkbox.setChecked(False)
+        self.expected_at_input.setDateTime(QDateTime.fromString(task_details[11],"yyyy-MM-dd HH:mm:ss"))
+        self.reply_input.setText(task_details[12])
+        if task_details[13]:
+            self.archived_checkbox.setChecked(True)
+        else:
+            self.archived_checkbox.setChecked(False)
+        self.send_button.setEnabled(False)
+
+    def on_tree_item_selected(self):
         """Handles selecting a user item in the TreeView."""
         index = self.tree_view.selectionModel().currentIndex()
 
@@ -421,28 +472,43 @@ class MainWindow(QMainWindow):
         filter_type = index.data(self.FILTER_ROLE)
 
         if user_id:
+            self.set_clear_mode() # Clear task details panel
             tasks = get_tasks(user_id=user_id, box_type=UI_INBOX)
             model = TaskTableModel(tasks)
             self.table_view.setModel(model)
-
         elif box_type:
+            if box_type == UI_INBOX:
+                self.set_inbox_mode()
+            elif box_type == UI_OUTBOX:
+                self.set_outbox_mode()
             tasks = get_tasks(user_id=config.my_id, box_type=box_type)
             model = TaskTableModel(tasks)
             self.table_view.setModel(model)
-
         elif filter_type:
             parent_index = index.parent()
             box_type = parent_index.data(self.BOX_ROLE)
-
+            if box_type == UI_INBOX:
+                self.set_inbox_mode()
+            elif box_type == UI_OUTBOX:
+                self.set_outbox_mode()
             tasks = get_tasks(user_id=config.my_id, box_type=box_type, filter_type=filter_type)
             model = TaskTableModel(tasks)
             self.table_view.setModel(model)
+        else:
+            model = TaskTableModel([])
+            self.table_view.setModel(model)
+            self.set_clear_mode()
+
+        self.table_view.selectionModel().selectionChanged.connect(self.on_table_row_selected)
 
         self.adjust_tableview()
 
     def adjust_tableview(self):
         self.table_view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)  # Default sizing
         self.table_view.horizontalHeader().setSectionResizeMode(4, QHeaderView.Stretch)
+        self.table_view.setWordWrap(True)
+        # self.table_view.resizeRowsToContents()
+        self.table_view.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
 
     def on_item_double_clicked(self, index):
         """Handles double-clicking a user item in the TreeView."""
@@ -478,31 +544,14 @@ class MainWindow(QMainWindow):
                                    archived=1 if self.archived_checkbox.isChecked() else 0)
             print(new_task_id)
 
-    def get_inbox(self):
-        self.set_inbox_mode()
-
-    def get_outbox(self):
-        self.set_outbox_mode()
-
-    def get_selfbox(self):
-        self.set_selfbox_mode()
-
-    def get_starred_box(self):
-        pass
-
-    def get_expired_box(self):
-        pass
-
-    def set_task_details_disabled(self):
+    def enable_task_details(self, enabled_bool):
         for element in self.task_details_widget.findChildren(QWidget):
-            element.setEnabled(False)
-
-    def set_task_details_enabled(self):
-        for element in self.task_details_widget.findChildren(QWidget):
-            element.setEnabled(True)
+            element.setEnabled(enabled_bool)
+        for action in self.task_actions:
+            action.setEnabled(enabled_bool)
 
     def set_inbox_mode(self):
-        self.set_task_details_enabled()
+        self.enable_task_details(True)
         self.title_input.setReadOnly(True)
         self.body_input.setReadOnly(True)
         self.reply_input.setReadOnly(False)
@@ -510,29 +559,32 @@ class MainWindow(QMainWindow):
             element.setEnabled(False)
 
     def set_outbox_mode(self):
-        self.set_task_details_enabled()
+        self.enable_task_details(True)
         self.title_input.setReadOnly(False)
         self.body_input.setReadOnly(False)
         self.reply_input.setReadOnly(True)
         for element in self.outbox_disabled_elements:
             element.setEnabled(False)
 
-    def set_selfbox_mode(self):
-        self.set_task_details_enabled()
-        self.title_input.setReadOnly(False)
-        self.body_input.setReadOnly(False)
-        self.reply_input.setReadOnly(False)
-
     def set_send_mode(self):
         self.current_task_id = None
         self.due_at_input.setDateTime(next_working_midday())
         self.expected_at_input.setDateTime(next_working_midday())
-        self.set_task_details_enabled()
+        self.enable_task_details(True)
         self.title_input.setReadOnly(False)
         self.body_input.setReadOnly(False)
         self.reply_input.setReadOnly(True)
         for element in self.send_disabled_elements:
             element.setEnabled(False)
+
+    def set_clear_mode(self):
+        self.due_at_input.setDateTime(next_working_midday())
+        self.expected_at_input.setDateTime(next_working_midday())
+        for element in self.clearable_elements:
+            element.setText("")
+        for checkbox in self.resettable_checkboxes:
+            checkbox.setChecked(False)
+        self.enable_task_details(False)
 
     def open_directory_dialog(self):
         directory_path = select_directory_dialog(parent=self, default_dir=get_directory(config.config[CFG_PATH]))

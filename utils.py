@@ -13,6 +13,7 @@ def next_working_midday():
     tomorrow_date.setTime(QTime(12, 0, 0))
     return tomorrow_date
 
+
 def read_config():
     with open(CFG_FILE, "r") as file:
         return json.load(file)
