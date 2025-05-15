@@ -73,11 +73,14 @@ UI_HELP = "Guida"
     # Treeview
 UI_INBOX = "Inbox"
 UI_OUTBOX = "Outbox"
-UI_SELFBOX = "Selfbox"
 UI_STARRED_BOX = "Contrassegnati"
 UI_EXPIRED_BOX = "Scaduti"
 UI_ALL_USERS = "Utenti"
 UI_SEND_TASK = "Invia un compito"
+
+    # Tableview
+UI_NOTES = "Note"
+UI_EXPIRED = "Scaduto"
 
     # Task details panel
 UI_TASK_ID = "ID"

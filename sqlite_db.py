@@ -1,16 +1,55 @@
 import sqlite3
 import bcrypt
 import config
+from PyQt5.QtCore import QDateTime
 from utils import exists
 from constants import (DB_USERS_ID_BASE, DB_USERS_TABLE, DB_USER_ID,
                        DB_FIRST_NAME, DB_LAST_NAME, DB_EMAIL, DB_PIN, DB_REGISTERED_AT, DB_ACTIVE, DB_TASKS_ID_BASE,
                        DB_TASKS_TABLE, DB_TASK_ID, DB_SENDER_ID, DB_RECEIVER_ID, DB_CREATED_AT, DB_MODIFIED_AT,
                        DB_TITLE, DB_BODY, DB_REFERENCE, DB_DUE_AT, DB_STARRED, DB_DONE, DB_EXPECTED_AT, DB_REPLY,
-                       DB_ARCHIVED, CFG_PATH, DB_SYNC_AT)
+                       DB_ARCHIVED, CFG_PATH, DB_SYNC_AT, UI_INBOX, UI_OUTBOX, UI_EXPIRED_BOX, UI_STARRED_BOX)
 
 
-def get_received_tasks(user_id):
+def get_tasks(user_id, box_type, filter_type=None):
     if exists(config.config[CFG_PATH]):
+        sql_conditions = ""
+        params = []
+
+        # Boxes
+        if box_type == UI_INBOX:
+            sql_conditions = f"WHERE t.{DB_RECEIVER_ID} = ? "
+            sql_conditions += f"AND t.{DB_ARCHIVED} = 0 "
+            params.append(user_id)
+
+        elif box_type == UI_OUTBOX:
+            sql_conditions = f"WHERE t.{DB_SENDER_ID} = ? "
+            params.append(user_id)
+
+        # Filters
+            # Starred filter
+        if filter_type == UI_STARRED_BOX:
+            sql_conditions += f"AND t.{DB_STARRED} = 1 "
+
+            # Expired filter
+        elif filter_type == UI_EXPIRED_BOX:
+            current_time = QDateTime.currentDateTime().toString("yyyy-MM-dd HH:mm:ss")
+            sql_conditions += f"AND t.{DB_DONE} = 0 "
+            if box_type == UI_OUTBOX:
+                sql_conditions += f"AND t.{DB_ARCHIVED} = 0 "
+            sql_conditions += f"AND t.{DB_DUE_AT} < ? "
+            params.append(current_time)
+
+            # Other user filter
+        elif config.my_id != user_id:
+            sql_conditions += f"AND t.{DB_STARRED} = 1 "
+            sql_conditions += f"AND t.{DB_DONE} = 0 "
+
+        # Last line of SQL conditions
+        if filter_type == UI_EXPIRED_BOX:
+            sql_conditions += f"ORDER BY t.{DB_DUE_AT}"
+        else:
+            sql_conditions += f"ORDER BY t.{DB_MODIFIED_AT} DESC"
+
         # Connect to DB
         conn = sqlite3.connect(config.config[CFG_PATH])
         cursor = conn.cursor()
@@ -19,26 +58,26 @@ def get_received_tasks(user_id):
             SELECT 
                 t.{DB_TASK_ID}, 
                 t.{DB_MODIFIED_AT}, 
+                t.{DB_STARRED}, 
+                t.{DB_ARCHIVED}, 
                 t.{DB_TITLE}, 
                 t.{DB_DUE_AT}, 
+                t.{DB_DONE}, 
                 sender.{DB_FIRST_NAME} AS sender_first_name, 
                 sender.{DB_LAST_NAME} AS sender_last_name,
                 receiver.{DB_FIRST_NAME} AS receiver_first_name, 
                 receiver.{DB_LAST_NAME} AS receiver_last_name
             FROM {DB_TASKS_TABLE} AS t
-            JOIN {DB_USERS_TABLE} AS sender
-            ON t.{DB_SENDER_ID} = sender.{DB_USER_ID}
-            JOIN {DB_USERS_TABLE} AS receiver
-            ON t.{DB_RECEIVER_ID} = receiver.{DB_USER_ID}
-            WHERE t.{DB_RECEIVER_ID} = ?
-            ORDER BY t.{DB_MODIFIED_AT} DESC
-        """, (user_id,))
+            JOIN {DB_USERS_TABLE} AS sender ON t.{DB_SENDER_ID} = sender.{DB_USER_ID}
+            JOIN {DB_USERS_TABLE} AS receiver ON t.{DB_RECEIVER_ID} = receiver.{DB_USER_ID}
+            {sql_conditions}
+        """, tuple(params))
 
         return cursor.fetchall()
-    return True
+    return False
 
 
-def add_task(sender_id, receiver_id, title, body, reference, due_at, expected_at, starred, archived, reply="", status=0):
+def add_task(sender_id, receiver_id, title, body, reference, due_at, expected_at, starred, archived, reply="", done=0):
     """Add new task to DB"""
     if exists(config.config[CFG_PATH]):
         # Connect to DB
@@ -52,7 +91,7 @@ def add_task(sender_id, receiver_id, title, body, reference, due_at, expected_at
                 {DB_REFERENCE}, {DB_DUE_AT}, {DB_EXPECTED_AT}, {DB_STARRED},
                 {DB_ARCHIVED}, {DB_REPLY}, {DB_DONE}
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (sender_id, receiver_id, title, body, reference, due_at, expected_at, starred, archived, reply, status))
+        """, (sender_id, receiver_id, title, body, reference, due_at, expected_at, starred, archived, reply, done))
 
         # Commit changes to save the insertion
         conn.commit()

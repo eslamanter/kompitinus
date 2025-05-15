@@ -1,14 +1,14 @@
 import sys
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QFrame, QTableView, QSplitter, QLineEdit,
-    QTextEdit, QCheckBox, QPushButton, QDateTimeEdit, QTreeView, QStatusBar, QMenu, QAction, QToolButton, QActionGroup,
+    QTextEdit, QCheckBox, QPushButton, QDateTimeEdit, QTreeView, QStatusBar, QMenu, QAction, QToolButton,
     QHeaderView, QAbstractItemView)
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QCursor, QBrush, QColor
-from PyQt5.QtCore import Qt, QDateTime, QTime
+from PyQt5.QtCore import Qt, QDateTime
 from readme_ui import ReadmeViewer
 from about_ui import AboutScreen
 from constants import *
-from sqlite_db import get_all_users, add_task, update_task, get_received_tasks
+from sqlite_db import get_all_users, add_task, update_task, get_tasks
 from user_ui import UserUpdate
 from utils import send_email, select_directory_dialog, get_directory, show_question_msg, next_working_midday
 import config
@@ -17,33 +17,57 @@ import config
 class TaskTableModel(QStandardItemModel):
     def __init__(self, tasks, parent=None):
         super().__init__(parent)
-        self.setHorizontalHeaderLabels([UI_TASK_ID, UI_MODIFIED_AT, UI_SENDER, UI_RECEIVER, UI_TASK, UI_DUE_AT])
+        self.setHorizontalHeaderLabels([UI_TASK_ID, UI_MODIFIED_AT, UI_SENDER, UI_RECEIVER, UI_TASK, UI_DUE_AT, UI_NOTES])
 
         self.ID_ROLE = Qt.UserRole
-        self.STARRED_ROLE = Qt.UserRole + 1
-        self.ARCHIVED_ROLE = Qt.UserRole + 2
-        self.DONE_ROLE = Qt.UserRole + 3
-        self.EXPIRED_ROLE = Qt.UserRole + 4
+
+        current_time = QDateTime.currentDateTime().toString("yyyy-MM-dd HH:mm:ss")
 
         for task in tasks:
-            (task_id, modified_at, title, due_at,
+            (task_id, modified_at, starred, archived, title, due_at, done,
              sender_first_name, sender_last_name, receiver_first_name, receiver_last_name) = task
-            sender_full_name = f"{sender_first_name} {sender_last_name}"
-            receiver_full_name = f"{receiver_first_name} {receiver_last_name}"
+            sender_full_name = f"{sender_first_name}\n{sender_last_name}"
+            receiver_full_name = f"{receiver_first_name}\n{receiver_last_name}"
 
             task_id_item = QStandardItem(str(task_id))
-            modified_at_item = QStandardItem(modified_at)
+            task_id_item.setData(task_id, self.ID_ROLE)
+
+            modified_at_item = QStandardItem(modified_at.replace(" ", "\n"))
             sender_full_name_item = QStandardItem(sender_full_name)
             receiver_full_name_item = QStandardItem(receiver_full_name)
             title_item = QStandardItem(title)
-            due_at_item = QStandardItem(due_at)
+            due_at_item = QStandardItem(due_at.replace(" ", "\n"))
+
+            expired = True if current_time > due_at else False
+
+            notes = ""
+            if done or archived:
+                notes += f"- {UI_DONE}\n" if done else ""
+                notes += f"- {UI_ARCHIVED}\n" if archived else ""
+            else:
+                notes += f"- {UI_STARRED}\n" if starred else ""
+                notes += f"- {UI_EXPIRED}\n" if expired else ""
+
+            notes_item = QStandardItem(notes.strip())
 
             for item in ([task_id_item, modified_at_item, sender_full_name_item, receiver_full_name_item,
-                            title_item, due_at_item]):
-                item.setBackground((QBrush(QColor(255, 204, 203))))
+                            title_item, due_at_item, notes_item]):
+                if archived:
+                    item.setBackground((QBrush(QColor(211, 211, 211))))  # Light grey
+                elif done:
+                    item.setBackground((QBrush(QColor(173, 216, 230))))  # Light blue
+                elif expired:
+                    if starred:
+                        item.setBackground((QBrush(QColor(255, 204, 203))))  # Light red
+                    else:
+                        item.setBackground((QBrush(QColor(255, 200, 130))))  # Light orange
+                else:
+                    item.setBackground((QBrush(QColor(144, 238, 144))))  # Light green
+
+                item.setFlags(item.flags() & ~Qt.ItemIsEditable)  # Disable editing
 
             self.appendRow([task_id_item, modified_at_item, sender_full_name_item, receiver_full_name_item,
-                            title_item, due_at_item])
+                            title_item, due_at_item, notes_item])
 
 
 class MainWindow(QMainWindow):
@@ -75,20 +99,17 @@ class MainWindow(QMainWindow):
         # Create child items for my_boxes_items
         inbox_item = QStandardItem(UI_INBOX)
         outbox_item = QStandardItem(UI_OUTBOX)
-        selfbox_item = QStandardItem(UI_SELFBOX)
 
         inbox_item.setData(UI_INBOX, self.BOX_ROLE)
         outbox_item.setData(UI_OUTBOX, self.BOX_ROLE)
-        selfbox_item.setData(UI_SELFBOX, self.BOX_ROLE)
 
         # Create filters for each child item
-        for box in [inbox_item, outbox_item, selfbox_item]:
+        for box in [inbox_item, outbox_item]:
             box.appendRow((create_sub_items(UI_STARRED_BOX)))
             box.appendRow((create_sub_items(UI_EXPIRED_BOX)))
 
         my_boxes_items.appendRow(inbox_item)
         my_boxes_items.appendRow(outbox_item)
-        my_boxes_items.appendRow(selfbox_item)
 
         # Get all users form DB & populate users full names under all_users_items
         users = get_all_users()
@@ -120,7 +141,6 @@ class MainWindow(QMainWindow):
         self.table_view = QTableView()
         self.table_view.setSelectionBehavior(QTableView.SelectRows)  # Selects the entire row
         self.table_view.setSelectionMode(QAbstractItemView.SingleSelection)  # Allows only one row at a time
-        self.table_view.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
         # Create a splitter and add both tree view and table view
         self.left_splitter = QSplitter(Qt.Horizontal)
@@ -308,6 +328,8 @@ class MainWindow(QMainWindow):
         self.right_splitter = QSplitter(Qt.Horizontal)
         self.right_splitter.addWidget(self.left_splitter)
         self.right_splitter.addWidget(self.task_details_widget)
+        self.right_splitter.setStretchFactor(0, 2)
+        self.right_splitter.setStretchFactor(1, 1)
 
         # Set the splitter as the main layout
         central_layout = QVBoxLayout(central_widget)
@@ -399,16 +421,28 @@ class MainWindow(QMainWindow):
         filter_type = index.data(self.FILTER_ROLE)
 
         if user_id:
-            print(f"Selected User ID: {user_id}")
+            tasks = get_tasks(user_id=user_id, box_type=UI_INBOX)
+            model = TaskTableModel(tasks)
+            self.table_view.setModel(model)
+
         elif box_type:
-            if box_type == UI_INBOX:
-                tasks = get_received_tasks(config.my_id)
-                model = TaskTableModel(tasks)
-                self.table_view.setModel(model)
+            tasks = get_tasks(user_id=config.my_id, box_type=box_type)
+            model = TaskTableModel(tasks)
+            self.table_view.setModel(model)
+
         elif filter_type:
             parent_index = index.parent()
             box_type = parent_index.data(self.BOX_ROLE)
-            print(f"Selected Filter: {filter_type} of Box: {box_type}")
+
+            tasks = get_tasks(user_id=config.my_id, box_type=box_type, filter_type=filter_type)
+            model = TaskTableModel(tasks)
+            self.table_view.setModel(model)
+
+        self.adjust_tableview()
+
+    def adjust_tableview(self):
+        self.table_view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)  # Default sizing
+        self.table_view.horizontalHeader().setSectionResizeMode(4, QHeaderView.Stretch)
 
     def on_item_double_clicked(self, index):
         """Handles double-clicking a user item in the TreeView."""
