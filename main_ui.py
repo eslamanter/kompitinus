@@ -1,4 +1,5 @@
 import sys
+
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QFrame, QTableView, QSplitter, QLineEdit,
     QTextEdit, QCheckBox, QPushButton, QDateTimeEdit, QTreeView, QStatusBar, QMenu, QAction, QToolButton,
@@ -167,13 +168,11 @@ class MainWindow(QMainWindow):
         right_meta_layout = QVBoxLayout()
         self.sender_label = QLabel(f"{UI_SENDER}:")
         self.sender_full_name = QLabel()
-        self.sender_email = QLabel(F'<a href="#">{""}</a>')
-        self.sender_email.linkActivated.connect(lambda: send_email(email="", title=f"{APP_NAME}_{UI_TASK}_{100000}")) #
+        self.sender_email = QLabel()
 
         self.receiver_label = QLabel(f"{UI_RECEIVER}:")
         self.receiver_full_name = QLabel()
-        self.receiver_email = QLabel(f'<a href="#">{""}</a>')
-        self.receiver_email.linkActivated.connect(lambda: send_email(email="", title=f"{APP_NAME}_{UI_TASK}_{100000}")) #
+        self.receiver_email = QLabel()
 
         right_meta_layout.addWidget(self.sender_label)
         right_meta_layout.addWidget(self.sender_full_name)
@@ -220,7 +219,6 @@ class MainWindow(QMainWindow):
 
         # Task title input
         self.title_input = QLineEdit()
-        self.title_input.textChanged.connect(self.check_send_button)
         self.title_input.setReadOnly(True)
         main_vertical_layout.addWidget(self.title_input)
 
@@ -302,7 +300,6 @@ class MainWindow(QMainWindow):
 
         # Reply input
         self.reply_input = QTextEdit()
-        self.reply_input.textChanged.connect(self.check_send_button)
         self.reply_input.setReadOnly(True)
         main_vertical_layout.addWidget(self.reply_input)
 
@@ -370,7 +367,7 @@ class MainWindow(QMainWindow):
         self.adjustSize()
         self.center()
 
-        # Lists of UI elements to be disabled for inbox, outbox and send modes
+        # Lists of task UI elements to be disabled for inbox, outbox and send modes
         self.inbox_disabled_elements = [self.starred_checkbox, self.archived_checkbox, self.due_at_input,
                                         self.send_button, self.open_directory_action,
                                         self.paste_link_action, self.delete_link_action]
@@ -382,11 +379,13 @@ class MainWindow(QMainWindow):
         # Lists of UI elements to be reset and cleared in clear mode
         self.task_actions = [self.open_directory_action, self.copy_link_action, self.paste_link_action,
                              self.delete_link_action]
-        self.clearable_elements = [self.task_id_value, self.created_at_value, self.modified_at_value,
-                                   self.sender_full_name, self.sender_email, self.receiver_full_name,
-                                   self.receiver_email, self.title_input, self.body_input, self.due_at_days,
-                                   self.expected_at_days, self.reply_input]
-        self.resettable_checkboxes = [self.starred_checkbox, self.archived_checkbox, self.done_checkbox]
+        self.labels = [self.task_id_value, self.created_at_value, self.modified_at_value,
+                       self.sender_full_name, self.sender_email, self.receiver_full_name,
+                       self.receiver_email, self.due_at_days, self.expected_at_days]
+        self.text_inputs = [self.title_input, self.body_input, self.reply_input]
+        self.date_time_inputs = [self.due_at_input, self.expected_at_input] # Not to clear but to show following midday
+        self.clearable_elements = self.labels + self.text_inputs # To clear by setting text as ""
+        self.resettable_checkboxes = [self.starred_checkbox, self.archived_checkbox, self.done_checkbox] # To reset by unchecking
 
         self.set_clear_mode() # Initially clear task details panel
 
@@ -396,8 +395,16 @@ class MainWindow(QMainWindow):
         self.update_ui = None
 
         # Attributes
-        self.current_task_id = None
-        self.new_receiver_id = None
+        self.current_task_id = None # Stores current task ID. Stores None if no task selected or upon sending a new task
+        self.new_receiver_id = None # Stores new task receiver user ID. Stores None if task exists
+
+        # Connect input changes to send button enabling
+        for date_time_input in self.date_time_inputs:
+            date_time_input.dateTimeChanged.connect(self.check_send_button)
+        for text_input in self.text_inputs:
+            text_input.textChanged.connect(self.check_send_button)
+        for checkbox in self.resettable_checkboxes:
+            checkbox.stateChanged.connect(self.check_send_button)
 
     def set_treeview_readonly(self):
         """Disable editing for all items in the tree view."""
@@ -415,37 +422,48 @@ class MainWindow(QMainWindow):
 
     def check_send_button(self):
         """Enables send button based if task title is not empty, otherwise, disables it."""
-        if self.reply_input.isReadOnly():
+        if self.current_task_id or self.new_receiver_id:
             if self.title_input.text().strip():
                 self.send_button.setEnabled(True)
             else:
                 self.send_button.setEnabled(False)
-        elif self.title_input.isReadOnly():
-            if self.reply_input.toPlainText().strip():
-                self.send_button.setEnabled(True)
-            else:
-                self.send_button.setEnabled(False)
+
+
+    def show_sender_receiver_info(self,sender_id, receiver_id, task_id=""):
+        sender_first_name, sender_last_name = get_user_full_name(sender_id)
+        self.sender_full_name.setText(f"{sender_first_name} {sender_last_name}")
+        sender_email = get_user_email(sender_id)
+        self.sender_email.setText(f'<a href="#">{sender_email}</a>')
+        self.sender_email.setToolTip(f"{UI_SEND_EMAIL_TO} {sender_email}")
+        self.sender_email.linkActivated.connect(
+            lambda: send_email(email=sender_email, title=f"{UI_TASK} {task_id}"))
+
+        receiver_first_name, receiver_last_name = get_user_full_name(receiver_id)
+        self.receiver_full_name.setText(f"{receiver_first_name} {receiver_last_name}")
+        receiver_email = get_user_email(receiver_id)
+        self.receiver_email.setText(f'<a href="#">{receiver_email}</a>')
+        self.receiver_email.setToolTip(f"{UI_SEND_EMAIL_TO} {receiver_email}")
+        self.receiver_email.linkActivated.connect(
+            lambda: send_email(email=receiver_email, title=f"{UI_TASK} {task_id}"))
 
     def on_table_row_selected(self):
         """Retrieve task ID from the selected row """
-        index = self.table_view.selectionModel().currentIndex()
-        id_col_index =  self.table_view.model().index(index.row(), 0)
+        item_index = self.table_view.selectionModel().currentIndex()
+        id_col_index =  self.table_view.model().index(item_index.row(), 0)
         self.current_task_id = self.table_view.model().data(id_col_index, Qt.UserRole)
         task_details = get_task_details(self.current_task_id)
 
-        self.task_id_value.setText(str(task_details[0]))
-        sender_first_name,  sender_last_name = get_user_full_name(task_details[1])
-        self.sender_full_name.setText(f"{sender_first_name} {sender_last_name}")
-        self.sender_email.setText(get_user_email(task_details[1]))
-        receiver_first_name, receiver_last_name = get_user_full_name(task_details[2])
-        self.receiver_full_name.setText(f"{receiver_first_name} {receiver_last_name}")
-        self.receiver_email.setText(get_user_email(task_details[2]))
+        task_id = task_details[0]
+        self.task_id_value.setText(str(task_id))
+        self.show_sender_receiver_info(task_id=task_id, sender_id=task_details[1], receiver_id=task_details[2])
         self.created_at_value.setText(task_details[3])
         self.modified_at_value.setText(task_details[4])
         self.title_input.setText(task_details[5])
         self.body_input.setText(task_details[6])
+
         self.reference_label.setText(f'<a href={task_details[7]}>{UI_REFERENCE}:</a>')
         self.reference_label.setToolTip(task_details[7])
+
         self.due_at_input.setDateTime(QDateTime.fromString(task_details[8],"yyyy-MM-dd HH:mm:ss"))
         if task_details[9]:
             self.starred_checkbox.setChecked(True)
@@ -467,12 +485,13 @@ class MainWindow(QMainWindow):
         """Handles selecting a user item in the TreeView."""
         index = self.tree_view.selectionModel().currentIndex()
 
-        user_id = index.data(self.USER_ROLE)
-        box_type = index.data(self.BOX_ROLE)
-        filter_type = index.data(self.FILTER_ROLE)
+        user_id = index.data(self.USER_ROLE) # User selection
+        box_type = index.data(self.BOX_ROLE) # Inbox/Outbox selection
+        filter_type = index.data(self.FILTER_ROLE) # Starred/Expired filter selection
+
+        self.set_clear_mode()  # Clear task details panel
 
         if user_id:
-            self.set_clear_mode() # Clear task details panel
             tasks = get_tasks(user_id=user_id, box_type=UI_INBOX)
             model = TaskTableModel(tasks)
             self.table_view.setModel(model)
@@ -484,6 +503,7 @@ class MainWindow(QMainWindow):
             tasks = get_tasks(user_id=config.my_id, box_type=box_type)
             model = TaskTableModel(tasks)
             self.table_view.setModel(model)
+            self.table_view.selectionModel().selectionChanged.connect(self.on_table_row_selected)
         elif filter_type:
             parent_index = index.parent()
             box_type = parent_index.data(self.BOX_ROLE)
@@ -494,12 +514,10 @@ class MainWindow(QMainWindow):
             tasks = get_tasks(user_id=config.my_id, box_type=box_type, filter_type=filter_type)
             model = TaskTableModel(tasks)
             self.table_view.setModel(model)
+            self.table_view.selectionModel().selectionChanged.connect(self.on_table_row_selected)
         else:
             model = TaskTableModel([])
             self.table_view.setModel(model)
-            self.set_clear_mode()
-
-        self.table_view.selectionModel().selectionChanged.connect(self.on_table_row_selected)
 
         self.adjust_tableview()
 
@@ -507,7 +525,6 @@ class MainWindow(QMainWindow):
         self.table_view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)  # Default sizing
         self.table_view.horizontalHeader().setSectionResizeMode(4, QHeaderView.Stretch)
         self.table_view.setWordWrap(True)
-        # self.table_view.resizeRowsToContents()
         self.table_view.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
 
     def on_item_double_clicked(self, index):
@@ -515,34 +532,42 @@ class MainWindow(QMainWindow):
         user_id = index.data(self.USER_ROLE)
         if user_id:
             self.new_receiver_id = user_id
+            self.show_sender_receiver_info(config.my_id, self.new_receiver_id)
             self.set_send_mode()
 
     def send_task(self):
+        self.send_button.setEnabled(False)
         if self.current_task_id:
-            update_result = update_task(sender_id=config.my_id,
-                                        receiver_id=self.new_receiver_id,
-                                        title=self.title_input.text(),
+            update_result = update_task(title=self.title_input.text().upper(),
                                         body=self.body_input.toPlainText(),
                                         reference=self.reference_label.toolTip(),
                                         due_at=self.due_at_input.text(),
-                                        expected_at=self.expected_at_input,
+                                        expected_at=self.expected_at_input.text(),
                                         starred=1 if self.starred_checkbox.isChecked() else 0,
                                         archived=1 if self.archived_checkbox.isChecked() else 0,
-                                        reply=self.reply_input.text(),
+                                        reply=self.reply_input.toPlainText(),
                                         done=1 if self.done_checkbox.isChecked() else 0,
                                         task_id=self.current_task_id)
-            print(update_result)
+            if update_result:
+                self.status_bar.showMessage(f"{UI_TASK} {self.current_task_id} {UI_TASK_UPDATED}")
+            else:
+                self.send_button.setEnabled(True)
         else:
             new_task_id = add_task(sender_id=config.my_id,
                                    receiver_id=self.new_receiver_id,
-                                   title=self.title_input.text(),
+                                   title=self.title_input.text().upper(),
                                    body=self.body_input.toPlainText(),
                                    reference=self.reference_label.toolTip(),
                                    due_at=self.due_at_input.text(),
                                    expected_at=self.expected_at_input.text(),
                                    starred=1 if self.starred_checkbox.isChecked() else 0,
                                    archived=1 if self.archived_checkbox.isChecked() else 0)
-            print(new_task_id)
+            if new_task_id:
+                self.status_bar.showMessage(f"{UI_TASK} {new_task_id} {UI_TASK_SENT}")
+                outbox_index = self.tree_model.index(1, 0, self.tree_model.index(0, 0))
+                self.tree_view.setCurrentIndex(outbox_index)
+            else:
+                self.send_button.setEnabled(True)
 
     def enable_task_details(self, enabled_bool):
         for element in self.task_details_widget.findChildren(QWidget):
@@ -551,6 +576,8 @@ class MainWindow(QMainWindow):
             action.setEnabled(enabled_bool)
 
     def set_inbox_mode(self):
+        self.current_task_id = None
+        self.new_receiver_id = None
         self.enable_task_details(True)
         self.title_input.setReadOnly(True)
         self.body_input.setReadOnly(True)
@@ -559,6 +586,8 @@ class MainWindow(QMainWindow):
             element.setEnabled(False)
 
     def set_outbox_mode(self):
+        self.current_task_id = None
+        self.new_receiver_id = None
         self.enable_task_details(True)
         self.title_input.setReadOnly(False)
         self.body_input.setReadOnly(False)
@@ -568,8 +597,8 @@ class MainWindow(QMainWindow):
 
     def set_send_mode(self):
         self.current_task_id = None
-        self.due_at_input.setDateTime(next_working_midday())
-        self.expected_at_input.setDateTime(next_working_midday())
+        for date_time_input in self.date_time_inputs:
+            date_time_input.setDateTime(next_working_midday())
         self.enable_task_details(True)
         self.title_input.setReadOnly(False)
         self.body_input.setReadOnly(False)
@@ -578,8 +607,8 @@ class MainWindow(QMainWindow):
             element.setEnabled(False)
 
     def set_clear_mode(self):
-        self.due_at_input.setDateTime(next_working_midday())
-        self.expected_at_input.setDateTime(next_working_midday())
+        for date_time_input in self.date_time_inputs:
+            date_time_input.setDateTime(next_working_midday())
         for element in self.clearable_elements:
             element.setText("")
         for checkbox in self.resettable_checkboxes:
@@ -592,6 +621,7 @@ class MainWindow(QMainWindow):
         self.reference_label.setToolTip(directory_path)
         if directory_path:
             self.status_bar.showMessage(f"{UI_SELECTED}: {directory_path}")
+            self.check_send_button()
 
     def copy_reference_link(self):
         copied_text = self.reference_label.toolTip()
@@ -607,6 +637,7 @@ class MainWindow(QMainWindow):
         self.reference_label.setToolTip(pasted_text)
         if pasted_text:
             self.status_bar.showMessage(f"{UI_PASTED}: {pasted_text}")
+            self.check_send_button()
 
     def delete_reference_link(self):
         deleted_text = self.reference_label.toolTip()
@@ -614,6 +645,7 @@ class MainWindow(QMainWindow):
         self.reference_label.setToolTip("")
         if deleted_text:
             self.status_bar.showMessage(f"{UI_DELETED}: {deleted_text}")
+            self.check_send_button()
 
     def show_user(self):
         if self.update_ui is None:

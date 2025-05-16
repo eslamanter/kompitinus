@@ -199,9 +199,9 @@ class UserUpdate(UserDialog):
 
     def user_update(self):
         if self.email_input.text() == config.config[CFG_EMAIL] or not email_exists(self.email_input.text()):
-            update_user_data(first_name=self.first_name_input.text(),
-                             last_name=self.last_name_input.text(),
-                             email=self.email_input.text(),
+            update_user_data(first_name=self.first_name_input.text().title(),
+                             last_name=self.last_name_input.text().title(),
+                             email=self.email_input.text().lower(),
                              pin=self.pin_input.text())
 
             if config.config[CFG_EMAIL] != self.email_input.text() or config.config[CFG_PIN] != self.pin_input.text():
@@ -307,7 +307,7 @@ class UserLogin(QDialog):
         return True
 
     def user_login(self):
-        if check_login(email=self.email_input.text(), pin=self.pin_input.text()):
+        if check_login(email=self.email_input.text().lower(), pin=self.pin_input.text()):
             config.config[CFG_EMAIL] = self.email_input.text()
             config.config[CFG_PIN] = self.pin_input.text()
             write_config()

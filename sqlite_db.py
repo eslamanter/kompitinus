@@ -119,7 +119,7 @@ def add_task(sender_id, receiver_id, title, body, reference, due_at, expected_at
     return False
 
 
-def update_task(task_id, sender_id, receiver_id, title, body, reference, due_at, expected_at, starred, archived, reply, done):
+def update_task(title, body, reference, due_at, expected_at, starred, archived, reply, done, task_id):
     """Update existing task in DB"""
     if exists(config.config[CFG_PATH]):
         # Connect to DB
@@ -129,11 +129,13 @@ def update_task(task_id, sender_id, receiver_id, title, body, reference, due_at,
         # Update query
         cursor.execute(f"""
             UPDATE {DB_TASKS_TABLE}
-            SET {DB_SENDER_ID} = ?, {DB_RECEIVER_ID} = ?, {DB_TITLE} = ?, {DB_BODY} = ?, 
-                {DB_REFERENCE} = ?, {DB_DUE_AT} = ?, {DB_EXPECTED_AT} = ?, {DB_STARRED} = ?, 
-                {DB_ARCHIVED} = ?, {DB_REPLY} = ?, {DB_DONE} = ?
+            SET {DB_TITLE} = ?, {DB_BODY} = ?, {DB_REFERENCE} = ?, {DB_DUE_AT} = ?, {DB_EXPECTED_AT} = ?,
+                {DB_STARRED} = ?, {DB_ARCHIVED} = ?, {DB_REPLY} = ?, {DB_DONE} = ?,
+                {DB_MODIFIED_AT} = datetime('now', 'localtime')
             WHERE {DB_TASK_ID} = ?
-        """, (sender_id, receiver_id, title, body, reference, due_at, expected_at, starred, archived, reply, done, task_id))
+        """, (title, body, reference, due_at, expected_at,
+              starred, archived, reply, done,
+              task_id))
 
         # Commit changes to save the update
         conn.commit()

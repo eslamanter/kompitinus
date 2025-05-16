@@ -28,7 +28,7 @@ def exists(path):
     return os.path.exists(path)
 
 
-def send_email(email=DEV_EMAIL, title=f"{APP_NAME}_{APP_VERSION}"):
+def send_email(email=DEV_EMAIL, title=f"{APP_NAME} {APP_VERSION}"):
     mailto_link = f"mailto:{email}?subject=[{title}] "
     QDesktopServices.openUrl(QUrl(mailto_link))
 
