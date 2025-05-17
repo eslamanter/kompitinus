@@ -1,7 +1,7 @@
 import sys
 import config
 from PyQt5.QtWidgets import QApplication
-from constants import DB_NAME, CFG_FILE, CFG_PATH, CFG_EMAIL, CFG_PIN, MSG_DB_INACCESSIBLE
+from constants import DB_NAME, CFG_FILE, CFG_PATH, CFG_EMAIL, CFG_PIN, MSG_DB_INACCESSIBLE, ERR_GUI
 from sqlite_db import check_login, email_exists
 from utils import exists, get_basename, read_config, show_warning_msg, valid_pin
 from config_ui import ConfigDialog
@@ -17,7 +17,7 @@ def main():
         main_ui.show()
         sys.exit(app.exec())
     except Exception as e:
-        show_warning_msg(e)
+        show_warning_msg(f"{ERR_GUI}: {str(e)}")
 
 
 def check_config():

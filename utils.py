@@ -15,13 +15,6 @@ def count_days(deadline):
     return now.daysTo(deadline)
 
 
-def next_working_midday():
-    """Retrieves formatted date-time of tomorrow's midday."""
-    tomorrow_date = QDateTime.currentDateTime().addDays(1)
-    tomorrow_date.setTime(QTime(12, 0, 0))
-    return tomorrow_date
-
-
 def read_config():
     """Retrieves local config data from json file."""
     with open(CFG_FILE, "r") as file:

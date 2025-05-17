@@ -13,7 +13,7 @@ from constants import (DB_USERS_ID_BASE, DB_USERS_TABLE, DB_USER_ID,
                        DB_TITLE, DB_BODY, DB_REFERENCE, DB_DUE_AT, DB_STARRED, DB_DONE, DB_EXPECTED_AT, DB_REPLY,
                        DB_ARCHIVED, CFG_PATH, DB_SEEN_AT, UI_INBOX, UI_OUTBOX, UI_EXPIRED_BOX, UI_STARRED_BOX,
                        UI_TASK_ID, UI_MODIFIED_AT, UI_SENDER, UI_RECEIVER, UI_TASK, UI_DUE_AT, DB_REPORT_VIEW, UI_DELAY,
-                       UI_DONE, MSG_EXCEL_OPENED, MSG_DB_INACCESSIBLE)
+                       UI_DONE, MSG_EXCEL_OPENED, MSG_DB_INACCESSIBLE, ERR_DB)
 
 
 def export_report_view():
@@ -84,7 +84,7 @@ def export_report_view():
         except PermissionError:
             show_warning_msg(MSG_EXCEL_OPENED)
         except sqlite3.Error as e:
-            show_warning_msg(e)
+            show_warning_msg(f"{ERR_DB}: {str(e)}")
     return False
 
 
@@ -109,11 +109,11 @@ def get_task_details(task_id):
 
             return task_data
         except sqlite3.Error as e:
-            show_warning_msg(e)
+            show_warning_msg(f"{ERR_DB}: {str(e)}")
     return False
 
 
-def get_tasks(user_id, box_type, filter_type=None):
+def get_tasks_by_user(user_id, box_type, filter_type=None):
     """Retrieves all tasks of a user given their ID, box type, and optionally box filter."""
     if not exists(config.config[CFG_PATH]):
         show_warning_msg(MSG_DB_INACCESSIBLE)
@@ -182,7 +182,7 @@ def get_tasks(user_id, box_type, filter_type=None):
 
             return cursor.fetchall()
         except sqlite3.Error as e:
-            show_warning_msg(e)
+            show_warning_msg(f"{ERR_DB}: {str(e)}")
     return False
 
 
@@ -210,7 +210,7 @@ def add_task(sender_id, receiver_id, title, body, reference, due_at, expected_at
             conn.close()
             return cursor.lastrowid
         except sqlite3.Error as e:
-            show_warning_msg(e)
+            show_warning_msg(f"{ERR_DB}: {str(e)}")
     return False
 
 
@@ -240,7 +240,7 @@ def update_task(title, body, reference, due_at, expected_at, starred, archived, 
             conn.close()
             return True
         except sqlite3.Error as e:
-            show_warning_msg(e)
+            show_warning_msg(f"{ERR_DB}: {str(e)}")
     return False
 
 
@@ -264,7 +264,7 @@ def get_all_users():
 
             return cursor.fetchall()  # Get all rows
         except sqlite3.Error as e:
-            show_warning_msg(e)
+            show_warning_msg(f"{ERR_DB}: {str(e)}")
     sys.exit() # Exists if DB connection is not possible when app initializes UI
 
 
@@ -287,7 +287,28 @@ def email_exists(email):
 
             return result
         except sqlite3.Error as e:
-            show_warning_msg(e)
+            show_warning_msg(f"{ERR_DB}: {str(e)}")
+    return False
+
+
+def get_my_seen_at():
+    """Retrieves local user last seen at."""
+    if not exists(config.config[CFG_PATH]):
+        show_warning_msg(MSG_DB_INACCESSIBLE)
+    else:
+        try:
+            # Connect to the database
+            conn = sqlite3.connect(config.config[CFG_PATH])
+            cursor = conn.cursor()
+
+            cursor.execute(f"""
+            SELECT {DB_SEEN_AT} FROM {DB_USERS_TABLE}
+            WHERE {DB_USER_ID} = ?
+            """, (config.my_id,))
+            result = cursor.fetchone()
+            return result[0] if result else None  # Returns the timestamp or None if the user isn't found
+        except Exception as e:
+            show_warning_msg(f"{ERR_DB}: {str(e)}")
     return False
 
 
@@ -318,7 +339,7 @@ def get_user_email(user_id):
             return user_info[0] if user_info else None
 
         except sqlite3.Error as e:
-            show_warning_msg(e)
+            show_warning_msg(f"{ERR_DB}: {str(e)}")
     return False
 
 
@@ -349,7 +370,7 @@ def get_user_full_name(user_id):
             return user_info if user_info else None
 
         except sqlite3.Error as e:
-            show_warning_msg(e)
+            show_warning_msg(f"{ERR_DB}: {str(e)}")
     return False
 
 
@@ -383,7 +404,31 @@ def add_new_user(first_name, last_name, email, pin):
             conn.commit()
             conn.close()
         except sqlite3.Error as e:
-            show_warning_msg(e)
+            show_warning_msg(f"{ERR_DB}: {str(e)}")
+
+
+def update_my_seen_at():
+    """Updates local user last seen at."""
+    if not exists(config.config[CFG_PATH]):
+        show_warning_msg(MSG_DB_INACCESSIBLE)
+    else:
+        try:
+            # Connect to DB
+            conn = sqlite3.connect(config.config[CFG_PATH])
+            cursor = conn.cursor()
+
+            # Update query
+            cursor.execute(f"""
+                    UPDATE {DB_USERS_TABLE}
+                    SET {DB_SEEN_AT} = (datetime('now', 'localtime'))
+                    WHERE {DB_USER_ID} = ?
+                """, (config.my_id,))
+
+            # Commit and close
+            conn.commit()
+            conn.close()
+        except sqlite3.Error as e:
+            show_warning_msg(f"{ERR_DB}: {str(e)}")
 
 
 def update_user_data(first_name, last_name, email, pin):
@@ -411,7 +456,7 @@ def update_user_data(first_name, last_name, email, pin):
             conn.commit()
             conn.close()
         except sqlite3.Error as e:
-            show_warning_msg(e)
+            show_warning_msg(f"{ERR_DB}: {str(e)}")
 
 
 def check_login(email, pin):
@@ -440,7 +485,7 @@ def check_login(email, pin):
 
                 return False  # Incorrect PIN
         except sqlite3.Error as e:
-            show_warning_msg(e)
+            show_warning_msg(f"{ERR_DB}: {str(e)}")
 
     return None  # Missing/Inaccessible DB or invalid email
 
@@ -537,7 +582,7 @@ def create_db():
 
             return True
         except sqlite3.Error as e:
-            show_warning_msg(e)
+            show_warning_msg(f"{ERR_DB}: {str(e)}")
     return False
 
 

@@ -2,17 +2,16 @@ import sys
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QFrame, QTableView, QSplitter, QLineEdit,
     QTextEdit, QCheckBox, QPushButton, QDateTimeEdit, QTreeView, QStatusBar, QMenu, QAction, QToolButton,
-    QHeaderView, QAbstractItemView, QCalendarWidget)
-from PyQt5.QtGui import QStandardItemModel, QStandardItem, QCursor, QBrush, QColor, QTextCharFormat
-from PyQt5.QtCore import Qt, QDateTime, QDate
+    QHeaderView, QAbstractItemView)
+from PyQt5.QtGui import QStandardItemModel, QStandardItem, QCursor, QBrush, QColor, QTextCharFormat, QFont
+from PyQt5.QtCore import Qt, QDateTime, QDate, QTime
 from readme_ui import ReadmeViewer
 from about_ui import AboutScreen
 from constants import *
-from sqlite_db import (get_all_users, add_task, update_task, get_tasks, get_task_details, get_user_full_name,
-                       get_user_email, export_report_view)
+from sqlite_db import (get_all_users, add_task, update_task, get_tasks_by_user, get_task_details, get_user_full_name,
+                       get_user_email, export_report_view, get_my_seen_at, update_my_seen_at)
 from user_ui import UserUpdate
-from utils import (send_email, select_directory_dialog, get_directory, show_question_msg, next_working_midday,
-                   count_days, playsound_ok)
+from utils import send_email, select_directory_dialog, get_directory, show_question_msg, count_days, playsound_ok
 from datetime import date
 import config
 import holidays
@@ -21,25 +20,33 @@ import holidays
 class TaskTableModel(QStandardItemModel):
     def __init__(self, tasks, parent=None):
         super().__init__(parent)
-        self.setHorizontalHeaderLabels([UI_TASK_ID, UI_MODIFIED_AT, UI_SENDER, UI_RECEIVER, UI_TASK, UI_DUE_AT, UI_NOTES])
 
+        self.setHorizontalHeaderLabels([UI_TASK_ID, UI_MODIFIED_AT, UI_SENDER, UI_RECEIVER, UI_TASK, UI_DUE_AT, UI_NOTES])
         current_time = QDateTime.currentDateTime().toString("yyyy-MM-dd HH:mm:ss")
+
+        normal_font = QFont()
+        normal_font.setBold(False)
+        bold_font = QFont()
+        bold_font.setBold(True)
+        my_last_seen = get_my_seen_at()
 
         for task in tasks:
             (task_id, modified_at, starred, archived, title, due_at, done,
              sender_first_name, sender_last_name, receiver_first_name, receiver_last_name) = task
-            sender_full_name = f"{sender_first_name}\n{sender_last_name}"
-            receiver_full_name = f"{receiver_first_name}\n{receiver_last_name}"
 
             task_id_item = QStandardItem(str(task_id))
             task_id_item.setData(task_id, Qt.UserRole)
 
             modified_at_item = QStandardItem(modified_at.replace(" ", "\n"))
+
+            sender_full_name = f"{sender_first_name}\n{sender_last_name}"
             sender_full_name_item = QStandardItem(sender_full_name)
+
+            receiver_full_name = f"{receiver_first_name}\n{receiver_last_name}"
             receiver_full_name_item = QStandardItem(receiver_full_name)
+
             title_item = QStandardItem(title)
             due_at_item = QStandardItem(due_at[:16].replace(" ", "\n"))
-
             expired = True if current_time > due_at else False
 
             notes = ""
@@ -52,8 +59,15 @@ class TaskTableModel(QStandardItemModel):
 
             notes_item = QStandardItem(notes.strip())
 
+            task_font = normal_font
+            if my_last_seen:
+                if my_last_seen < modified_at:
+                    task_font = bold_font
+
             for item in ([task_id_item, modified_at_item, sender_full_name_item, receiver_full_name_item,
                             title_item, due_at_item, notes_item]):
+                item.setFont(task_font)
+
                 if archived:
                     item.setBackground((QBrush(QColor(211, 211, 211))))  # Light grey
                 elif done:
@@ -272,7 +286,6 @@ class MainWindow(QMainWindow):
         due_at_layout.addWidget(self.due_at_label)
         due_at_layout.addWidget(self.due_at_days)
         self.due_at_input = QDateTimeEdit()
-        self.due_at_input.setDateTime(next_working_midday())
         self.due_at_input.setDisplayFormat("yyyy-MM-dd HH:mm")
         self.due_at_input.setCalendarPopup(True)
         main_vertical_layout.addLayout(due_at_layout)
@@ -286,7 +299,6 @@ class MainWindow(QMainWindow):
         expected_at_layout.addWidget(self.expected_at_label)
         expected_at_layout.addWidget(self.expected_at_days)
         self.expected_at_input = QDateTimeEdit()
-        self.expected_at_input.setDateTime(next_working_midday())
         self.expected_at_input.setDisplayFormat("yyyy-MM-dd HH:mm")
         self.expected_at_input.setCalendarPopup(True)
         main_vertical_layout.addLayout(expected_at_layout)
@@ -391,8 +403,6 @@ class MainWindow(QMainWindow):
         self.clearable_elements = self.labels + self.text_inputs # To clear by setting text as ""
         self.resettable_checkboxes = [self.starred_checkbox, self.archived_checkbox, self.done_checkbox] # To reset by unchecking
 
-        self.set_clear_mode() # Initially clear task details panel
-
         # Placeholders
         self.about_ui = None
         self.readme_ui = None
@@ -417,6 +427,24 @@ class MainWindow(QMainWindow):
             checkbox.stateChanged.connect(self.check_send_button)
         self.done_checkbox.stateChanged.connect(self.update_due_expected_days)
 
+        self.set_deadlines_next_working_midday() # Initially set deadlines to next working midday
+        self.set_clear_mode()  # Initially clear task details panel
+
+    def is_special_date(self, qdate):
+        # Convert QDate to Python date
+        py_date = date(qdate.year(), qdate.month(), qdate.day())
+        # Check if it's a holiday or weekend
+        return py_date in self.italy_holidays or qdate.dayOfWeek() in [6, 7]  # Saturday = 6, Sunday = 7
+
+    def set_deadlines_next_working_midday(self):
+        """Set deadlines date-time as next working midday."""
+        day = QDate.currentDate().addDays(1)
+        while self.is_special_date(day):
+            day = day.addDays(1)
+        next_working_midday = QDateTime(day, QTime(12, 0))
+        for date_time_input in self.date_time_inputs:
+            date_time_input.setDateTime(next_working_midday)
+
     def highlight_selected_deadlines(self):
         selected_datetime_due = self.due_at_input.dateTime()
         selected_datetime_expected = self.expected_at_input.dateTime()
@@ -428,19 +456,12 @@ class MainWindow(QMainWindow):
         selected_date_expected = selected_datetime_expected.date()
         selected_time_expected = selected_datetime_expected.time()
 
-        # Check if the selected date is a holiday or weekend
-        def is_special_date(qdate):
-            # Convert QDate to Python date
-            py_date = date(qdate.year(), qdate.month(), qdate.day())
-            # Check if it's a holiday or weekend
-            return py_date in self.italy_holidays or qdate.dayOfWeek() in [6, 7]  # Saturday = 6, Sunday = 7
-
         # Check if time is outside working hours (before 09:00 or after 19:00)
         def is_outside_working_hours(qtime):
             return qtime.hour() < WORKING_HOURS[0] or qtime.hour() > WORKING_HOURS[1]
 
         # Apply red color if it's a holiday, weekend, or outside working hours
-        if is_special_date(selected_date_due):
+        if self.is_special_date(selected_date_due):
             due_style = "color: red;"
             self.due_at_input.setToolTip(UI_HOLIDAY)
         elif is_outside_working_hours(selected_time_due):
@@ -448,9 +469,9 @@ class MainWindow(QMainWindow):
             self.due_at_input.setToolTip(UI_OUTSIDE_HOURS)
         else:
             due_style = "color: black;"
-            self.due_at_input.setToolTip("")
+            self.due_at_input.setToolTip(UI_DUE_AT_TIP)
 
-        if is_special_date(selected_date_expected):
+        if self.is_special_date(selected_date_expected):
             expected_style = "color: red;"
             self.expected_at_input.setToolTip(UI_HOLIDAY)
         elif is_outside_working_hours(selected_time_expected):
@@ -458,7 +479,7 @@ class MainWindow(QMainWindow):
             self.expected_at_input.setToolTip(UI_OUTSIDE_HOURS)
         else:
             expected_style = "color: black;"
-            self.expected_at_input.setToolTip("")
+            self.expected_at_input.setToolTip(UI_EXPECTED_AT_TIP)
 
         self.due_at_input.setStyleSheet(due_style)
         self.expected_at_input.setStyleSheet(expected_style)
@@ -474,8 +495,8 @@ class MainWindow(QMainWindow):
         holiday_format.setForeground(QColor("red"))
 
         # Apply formatting to holiday dates
-        for date in self.italy_holidays.keys():
-            qdate = QDate(date.year, date.month, date.day)
+        for holiday_date in self.italy_holidays.keys():
+            qdate = QDate(holiday_date.year, holiday_date.month, holiday_date.day)
             due_at_calendar.setDateTextFormat(qdate, holiday_format)
             expected_at_calendar.setDateTextFormat(qdate, holiday_format)
 
@@ -587,7 +608,7 @@ class MainWindow(QMainWindow):
         self.set_clear_mode()  # Clear task details panel
 
         if user_id:
-            tasks = get_tasks(user_id=user_id, box_type=UI_INBOX)
+            tasks = get_tasks_by_user(user_id=user_id, box_type=UI_INBOX)
             model = TaskTableModel(tasks)
             self.table_view.setModel(model)
         elif box_type:
@@ -595,7 +616,7 @@ class MainWindow(QMainWindow):
                 self.set_inbox_mode()
             elif box_type == UI_OUTBOX:
                 self.set_outbox_mode()
-            tasks = get_tasks(user_id=config.my_id, box_type=box_type)
+            tasks = get_tasks_by_user(user_id=config.my_id, box_type=box_type)
             model = TaskTableModel(tasks)
             self.table_view.setModel(model)
             self.table_view.selectionModel().selectionChanged.connect(self.on_table_row_selected)
@@ -606,7 +627,7 @@ class MainWindow(QMainWindow):
                 self.set_inbox_mode()
             elif box_type == UI_OUTBOX:
                 self.set_outbox_mode()
-            tasks = get_tasks(user_id=config.my_id, box_type=box_type, filter_type=filter_type)
+            tasks = get_tasks_by_user(user_id=config.my_id, box_type=box_type, filter_type=filter_type)
             model = TaskTableModel(tasks)
             self.table_view.setModel(model)
             self.table_view.selectionModel().selectionChanged.connect(self.on_table_row_selected)
@@ -702,8 +723,7 @@ class MainWindow(QMainWindow):
 
     def set_send_mode(self):
         self.current_task_id = None
-        for date_time_input in self.date_time_inputs:
-            date_time_input.setDateTime(next_working_midday())
+        self.set_deadlines_next_working_midday()
         self.enable_task_details(True)
         self.title_input.setReadOnly(False)
         self.body_input.setReadOnly(False)
@@ -712,8 +732,7 @@ class MainWindow(QMainWindow):
             element.setEnabled(False)
 
     def set_clear_mode(self):
-        for date_time_input in self.date_time_inputs:
-            date_time_input.setDateTime(next_working_midday())
+        self.set_deadlines_next_working_midday()
         for element in self.clearable_elements:
             element.setText("")
         for checkbox in self.resettable_checkboxes:
@@ -775,6 +794,7 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         response = show_question_msg(text=MSG_CLOSE)
         if response:
+            update_my_seen_at()
             sys.exit()
         else:
             event.ignore()

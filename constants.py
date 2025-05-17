@@ -58,6 +58,7 @@ DB_EXPECTED_AT = "expected_at"
 DB_REPLY = "reply"
 DB_ARCHIVED = "archived"
 DB_TASKS_ID_BASE = 100000
+
     # Report
 DB_REPORT_VIEW = "report"
 
@@ -95,13 +96,13 @@ UI_SEND_EMAIL_TO = "Invia una mail a"
 UI_TASK = "Compito"
 UI_MAX_TITLE_LEN = 160
 UI_STARRED = "Contrassegnato"
-UI_STARRED_TIP = "Contrassegnato Tip" #------------------------
+UI_STARRED_TIP = "Contrassegnare per permettere agli altri di consultare il titolo e la scadenza"
 UI_ARCHIVED = "Archiviato"
-UI_ARCHIVED_TIP = "Archiviato Tip"
+UI_ARCHIVED_TIP = "Archiviare per nascondere agli altri, incluso il destinatario"
 
 UI_PLACEHOLDER_TITLE = "Titolo (Max 160 Caratteri)"
 UI_PLACEHOLDER_BODY = "Descrizione"
-UI_PLACEHOLDER_REPLY = "Risposta"
+UI_PLACEHOLDER_REPLY = "Risposta del responsabile"
 
 UI_REFERENCE = "Riferimento"
 UI_REFERENCE_OPEN = "Seleziona cartella"
@@ -110,13 +111,15 @@ UI_REFERENCE_PASTE = "Incolla Link"
 UI_REFERENCE_DELETE = "Cancella Link"
 
 UI_DUE_AT = "Scade il"
+UI_DUE_AT_TIP = "Data teorica di scadenza per il completamento"
 UI_EXPECTED_AT = "Previsto il"
+UI_EXPECTED_AT_TIP = "Data prevista dal responsabile per il completamento"
 UI_DAYS = "gg"
 UI_HOLIDAY = "Giorno non lavorativo!"
 UI_OUTSIDE_HOURS = "Fuori orari lavorativi!"
 UI_REPLY = "Risposta"
 UI_DONE = "Fatto"
-UI_DONE_TIP = "Fatto Tip"
+UI_DONE_TIP = "Segnare come completato"
 UI_SEND = "Invia"
 UI_DELAY = "Ritardo"
 
@@ -167,3 +170,7 @@ MSG_CLOSE = "Sei sicuro di voler chiudere?"
 
 # Help
 README_URL = f"https://raw.githubusercontent.com/eslamanter/{APP_NAME.lower()}/main/README.md"
+
+# Errors
+ERR_GUI = "GUI ERROR"
+ERR_DB = "DB ERROR"
