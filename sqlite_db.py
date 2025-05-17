@@ -1,5 +1,6 @@
 import os
 import sqlite3
+import sys
 import bcrypt
 import config
 import pandas as pd
@@ -16,6 +17,7 @@ from constants import (DB_USERS_ID_BASE, DB_USERS_TABLE, DB_USER_ID,
 
 
 def export_report_view():
+    """Exports DB report view into a new Excel worksheet of a new or an existing workbook in the local directory."""
     if not exists(config.config[CFG_PATH]):
         show_warning_msg(MSG_DB_INACCESSIBLE)
     else:
@@ -81,32 +83,41 @@ def export_report_view():
             return True
         except PermissionError:
             show_warning_msg(MSG_EXCEL_OPENED)
-        except Exception as e:
+        except sqlite3.Error as e:
             show_warning_msg(e)
     return False
 
 
 def get_task_details(task_id):
-    if exists(config.config[CFG_PATH]):
-        # Connect to DB
-        conn = sqlite3.connect(config.config[CFG_PATH])
-        cursor = conn.cursor()
+    """Retrieves all task details given the task ID."""
+    if not exists(config.config[CFG_PATH]):
+        show_warning_msg(MSG_DB_INACCESSIBLE)
+    else:
+        try:
+            # Connect to DB
+            conn = sqlite3.connect(config.config[CFG_PATH])
+            cursor = conn.cursor()
 
-        # Query to fetch the task by ID
-        cursor.execute(f"SELECT * FROM {DB_TASKS_TABLE} WHERE {DB_TASK_ID} = ?", (task_id,))
+            # Query to fetch the task by ID
+            cursor.execute(f"SELECT * FROM {DB_TASKS_TABLE} WHERE {DB_TASK_ID} = ?", (task_id,))
 
-        # Fetch the result
-        task_data = cursor.fetchone()
+            # Fetch the result
+            task_data = cursor.fetchone()
 
-        # Close the connection
-        conn.close()
+            # Close the connection
+            conn.close()
 
-        return task_data
+            return task_data
+        except sqlite3.Error as e:
+            show_warning_msg(e)
     return False
 
 
 def get_tasks(user_id, box_type, filter_type=None):
-    if exists(config.config[CFG_PATH]):
+    """Retrieves all tasks of a user given their ID, box type, and optionally box filter."""
+    if not exists(config.config[CFG_PATH]):
+        show_warning_msg(MSG_DB_INACCESSIBLE)
+    else:
         sql_conditions = ""
         params = []
 
@@ -145,336 +156,388 @@ def get_tasks(user_id, box_type, filter_type=None):
         else:
             sql_conditions += f"ORDER BY t.{DB_MODIFIED_AT} DESC"
 
-        # Connect to DB
-        conn = sqlite3.connect(config.config[CFG_PATH])
-        cursor = conn.cursor()
+        try:
+            # Connect to DB
+            conn = sqlite3.connect(config.config[CFG_PATH])
+            cursor = conn.cursor()
 
-        cursor.execute(f"""
-            SELECT 
-                t.{DB_TASK_ID}, 
-                t.{DB_MODIFIED_AT}, 
-                t.{DB_STARRED}, 
-                t.{DB_ARCHIVED}, 
-                t.{DB_TITLE}, 
-                t.{DB_DUE_AT}, 
-                t.{DB_DONE}, 
-                sender.{DB_FIRST_NAME} AS sender_first_name, 
-                sender.{DB_LAST_NAME} AS sender_last_name,
-                receiver.{DB_FIRST_NAME} AS receiver_first_name, 
-                receiver.{DB_LAST_NAME} AS receiver_last_name
-            FROM {DB_TASKS_TABLE} AS t
-            JOIN {DB_USERS_TABLE} AS sender ON t.{DB_SENDER_ID} = sender.{DB_USER_ID}
-            JOIN {DB_USERS_TABLE} AS receiver ON t.{DB_RECEIVER_ID} = receiver.{DB_USER_ID}
-            {sql_conditions}
-        """, tuple(params))
+            cursor.execute(f"""
+                SELECT 
+                    t.{DB_TASK_ID}, 
+                    t.{DB_MODIFIED_AT}, 
+                    t.{DB_STARRED}, 
+                    t.{DB_ARCHIVED}, 
+                    t.{DB_TITLE}, 
+                    t.{DB_DUE_AT}, 
+                    t.{DB_DONE}, 
+                    sender.{DB_FIRST_NAME} AS sender_first_name, 
+                    sender.{DB_LAST_NAME} AS sender_last_name,
+                    receiver.{DB_FIRST_NAME} AS receiver_first_name, 
+                    receiver.{DB_LAST_NAME} AS receiver_last_name
+                FROM {DB_TASKS_TABLE} AS t
+                JOIN {DB_USERS_TABLE} AS sender ON t.{DB_SENDER_ID} = sender.{DB_USER_ID}
+                JOIN {DB_USERS_TABLE} AS receiver ON t.{DB_RECEIVER_ID} = receiver.{DB_USER_ID}
+                {sql_conditions}
+            """, tuple(params))
 
-        return cursor.fetchall()
+            return cursor.fetchall()
+        except sqlite3.Error as e:
+            show_warning_msg(e)
     return False
 
 
 def add_task(sender_id, receiver_id, title, body, reference, due_at, expected_at, starred, archived, reply="", done=0):
-    """Add new task to DB"""
-    if exists(config.config[CFG_PATH]):
-        # Connect to DB
-        conn = sqlite3.connect(config.config[CFG_PATH])
-        cursor = conn.cursor()
+    """Adds new task to DB given all task details and returns its ID."""
+    if not exists(config.config[CFG_PATH]):
+        show_warning_msg(MSG_DB_INACCESSIBLE)
+    else:
+        try:
+            # Connect to DB
+            conn = sqlite3.connect(config.config[CFG_PATH])
+            cursor = conn.cursor()
 
-        # Insert query
-        cursor.execute(f"""
-            INSERT INTO {DB_TASKS_TABLE} (
-                {DB_SENDER_ID}, {DB_RECEIVER_ID}, {DB_TITLE}, {DB_BODY}, 
-                {DB_REFERENCE}, {DB_DUE_AT}, {DB_EXPECTED_AT}, {DB_STARRED},
-                {DB_ARCHIVED}, {DB_REPLY}, {DB_DONE}
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (sender_id, receiver_id, title, body, reference, due_at, expected_at, starred, archived, reply, done))
+            # Insert query
+            cursor.execute(f"""
+                INSERT INTO {DB_TASKS_TABLE} (
+                    {DB_SENDER_ID}, {DB_RECEIVER_ID}, {DB_TITLE}, {DB_BODY}, 
+                    {DB_REFERENCE}, {DB_DUE_AT}, {DB_EXPECTED_AT}, {DB_STARRED},
+                    {DB_ARCHIVED}, {DB_REPLY}, {DB_DONE}
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (sender_id, receiver_id, title, body, reference, due_at, expected_at, starred, archived, reply, done))
 
-        # Commit changes to save the insertion
-        conn.commit()
-        conn.close()
-        return cursor.lastrowid
+            # Commit changes to save the insertion
+            conn.commit()
+            conn.close()
+            return cursor.lastrowid
+        except sqlite3.Error as e:
+            show_warning_msg(e)
     return False
 
 
 def update_task(title, body, reference, due_at, expected_at, starred, archived, reply, done, task_id):
-    """Update existing task in DB"""
-    if exists(config.config[CFG_PATH]):
-        # Connect to DB
-        conn = sqlite3.connect(config.config[CFG_PATH])
-        cursor = conn.cursor()
+    """Updates an existing task given its ID and details."""
+    if not exists(config.config[CFG_PATH]):
+        show_warning_msg(MSG_DB_INACCESSIBLE)
+    else:
+        try:
+            # Connect to DB
+            conn = sqlite3.connect(config.config[CFG_PATH])
+            cursor = conn.cursor()
 
-        # Update query
-        cursor.execute(f"""
-            UPDATE {DB_TASKS_TABLE}
-            SET {DB_TITLE} = ?, {DB_BODY} = ?, {DB_REFERENCE} = ?, {DB_DUE_AT} = ?, {DB_EXPECTED_AT} = ?,
-                {DB_STARRED} = ?, {DB_ARCHIVED} = ?, {DB_REPLY} = ?, {DB_DONE} = ?,
-                {DB_MODIFIED_AT} = datetime('now', 'localtime')
-            WHERE {DB_TASK_ID} = ?
-        """, (title, body, reference, due_at, expected_at,
-              starred, archived, reply, done,
-              task_id))
+            # Update query
+            cursor.execute(f"""
+                UPDATE {DB_TASKS_TABLE}
+                SET {DB_TITLE} = ?, {DB_BODY} = ?, {DB_REFERENCE} = ?, {DB_DUE_AT} = ?, {DB_EXPECTED_AT} = ?,
+                    {DB_STARRED} = ?, {DB_ARCHIVED} = ?, {DB_REPLY} = ?, {DB_DONE} = ?,
+                    {DB_MODIFIED_AT} = datetime('now', 'localtime')
+                WHERE {DB_TASK_ID} = ?
+            """, (title, body, reference, due_at, expected_at,
+                  starred, archived, reply, done,
+                  task_id))
 
-        # Commit changes to save the update
-        conn.commit()
-        conn.close()
-        return True
+            # Commit changes to save the update
+            conn.commit()
+            conn.close()
+            return True
+        except sqlite3.Error as e:
+            show_warning_msg(e)
     return False
 
 
 def get_all_users():
-    if exists(config.config[CFG_PATH]):
-        # Connect to DB
-        conn = sqlite3.connect(config.config[CFG_PATH])
-        cursor = conn.cursor()
+    """Retrieves firstname, lastname, and email of all active users."""
+    if not exists(config.config[CFG_PATH]):
+        show_warning_msg(MSG_DB_INACCESSIBLE)
+    else:
+        try:
+            # Connect to DB
+            conn = sqlite3.connect(config.config[CFG_PATH])
+            cursor = conn.cursor()
 
-        # Fetch all users, ordered by last name then first name
-        cursor.execute(f"""
-        SELECT {DB_USER_ID}, {DB_FIRST_NAME}, {DB_LAST_NAME}, {DB_EMAIL}
-        FROM {DB_USERS_TABLE}
-        ORDER BY {DB_LAST_NAME} ASC, {DB_FIRST_NAME} ASC
-        """)
+            # Fetch all users, ordered by last name then first name
+            cursor.execute(f"""
+            SELECT {DB_USER_ID}, {DB_FIRST_NAME}, {DB_LAST_NAME}, {DB_EMAIL}
+            FROM {DB_USERS_TABLE}
+            WHERE {DB_ACTIVE} = 1
+            ORDER BY {DB_LAST_NAME} ASC, {DB_FIRST_NAME} ASC
+            """)
 
-        return cursor.fetchall()  # Get all rows
-    return []
+            return cursor.fetchall()  # Get all rows
+        except sqlite3.Error as e:
+            show_warning_msg(e)
+    sys.exit() # Exists if DB connection is not possible when app initializes UI
 
 
 def email_exists(email):
-    # Connect to DB
-    conn = sqlite3.connect(config.config[CFG_PATH])
-    cursor = conn.cursor()
+    """Checks if given email exists."""
+    if not exists(config.config[CFG_PATH]):
+        show_warning_msg(MSG_DB_INACCESSIBLE)
+    else:
+        try:
+            # Connect to DB
+            conn = sqlite3.connect(config.config[CFG_PATH])
+            cursor = conn.cursor()
 
-    # Execute the query
-    cursor.execute(F"SELECT 1 FROM {DB_USERS_TABLE} WHERE {DB_EMAIL} = ?", (email,))
-    result = cursor.fetchone() is not None
+            # Execute the query
+            cursor.execute(F"SELECT 1 FROM {DB_USERS_TABLE} WHERE {DB_EMAIL} = ?", (email,))
+            result = cursor.fetchone()
 
-    # Close the connection
-    conn.close()
+            # Close the connection
+            conn.close()
 
-    return result
+            return result
+        except sqlite3.Error as e:
+            show_warning_msg(e)
+    return False
 
 
 def get_user_email(user_id):
-    """Retrieves email as string for the given user ID."""
+    """Retrieves email for a given user ID."""
+    if not exists(config.config[CFG_PATH]):
+        show_warning_msg(MSG_DB_INACCESSIBLE)
+    else:
+        try:
+            # Connect to the database
+            conn = sqlite3.connect(config.config[CFG_PATH])
+            cursor = conn.cursor()
 
-    try:
-        # Connect to the database
-        conn = sqlite3.connect(config.config[CFG_PATH])
-        cursor = conn.cursor()
+            # Query to fetch user details
+            cursor.execute(f"""
+                SELECT {DB_EMAIL}
+                FROM {DB_USERS_TABLE}
+                WHERE {DB_USER_ID} = ?
+            """, (user_id,))
 
-        # Query to fetch user details
-        cursor.execute(f"""
-            SELECT {DB_EMAIL}
-            FROM {DB_USERS_TABLE}
-            WHERE {DB_USER_ID} = ?
-        """, (user_id,))
+            # Fetch the result
+            user_info = cursor.fetchone()
 
-        # Fetch the result
-        user_info = cursor.fetchone()
+            # Close connection
+            conn.close()
 
-        # Close connection
-        conn.close()
+            # Return the user info if found
+            return user_info[0] if user_info else None
 
-        # Return the user info if found
-        return user_info[0] if user_info else None
-
-    except sqlite3.Error as e:
-        return None
+        except sqlite3.Error as e:
+            show_warning_msg(e)
+    return False
 
 
 def get_user_full_name(user_id):
-    """Retrieves full name for the given user ID."""
+    """Retrieves firstname and lastname for a given user ID."""
+    if not exists(config.config[CFG_PATH]):
+        show_warning_msg(MSG_DB_INACCESSIBLE)
+    else:
+        try:
+            # Connect to the database
+            conn = sqlite3.connect(config.config[CFG_PATH])
+            cursor = conn.cursor()
 
-    try:
-        # Connect to the database
-        conn = sqlite3.connect(config.config[CFG_PATH])
-        cursor = conn.cursor()
+            # Query to fetch user details
+            cursor.execute(f"""
+                SELECT {DB_FIRST_NAME}, {DB_LAST_NAME}
+                FROM {DB_USERS_TABLE}
+                WHERE {DB_USER_ID} = ?
+            """, (user_id,))
 
-        # Query to fetch user details
-        cursor.execute(f"""
-            SELECT {DB_FIRST_NAME}, {DB_LAST_NAME}
-            FROM {DB_USERS_TABLE}
-            WHERE {DB_USER_ID} = ?
-        """, (user_id,))
+            # Fetch the result
+            user_info = cursor.fetchone()
 
-        # Fetch the result
-        user_info = cursor.fetchone()
+            # Close connection
+            conn.close()
 
-        # Close connection
-        conn.close()
+            # Return the user info if found
+            return user_info if user_info else None
 
-        # Return the user info if found
-        return user_info if user_info else None
-
-    except sqlite3.Error as e:
-        return None
+        except sqlite3.Error as e:
+            show_warning_msg(e)
+    return False
 
 
 def add_new_user(first_name, last_name, email, pin):
-    # Connect to DB
-    conn = sqlite3.connect(config.config[CFG_PATH])
-    cursor = conn.cursor()
+    """Adds new user given firstname, lastname, email, and pin and assigns ID to config.my_id."""
+    if not exists(config.config[CFG_PATH]):
+        show_warning_msg(MSG_DB_INACCESSIBLE)
+    else:
+        try:
+            # Connect to DB
+            conn = sqlite3.connect(config.config[CFG_PATH])
+            cursor = conn.cursor()
 
-    # Hash user pin
-    salt = bcrypt.gensalt()
-    hashed_pin = bcrypt.hashpw(pin.encode(), salt)
+            # Hash user pin
+            salt = bcrypt.gensalt()
+            hashed_pin = bcrypt.hashpw(pin.encode(), salt)
 
-    # User data to insert
-    user_data = (first_name, last_name, email, hashed_pin,)
+            # User data to insert
+            user_data = (first_name, last_name, email, hashed_pin,)
 
-    # Insert query
-    cursor.execute(f"""
-        INSERT INTO {DB_USERS_TABLE} ({DB_FIRST_NAME}, {DB_LAST_NAME}, {DB_EMAIL}, {DB_PIN})
-        VALUES (?, ?, ?, ?)
-    """, user_data)
+            # Insert query
+            cursor.execute(f"""
+                INSERT INTO {DB_USERS_TABLE} ({DB_FIRST_NAME}, {DB_LAST_NAME}, {DB_EMAIL}, {DB_PIN})
+                VALUES (?, ?, ?, ?)
+            """, user_data)
 
-    # Get user ID
-    config.my_id = cursor.lastrowid
+            # Get user ID
+            config.my_id = cursor.lastrowid
 
-    # Commit and close
-    conn.commit()
-    conn.close()
+            # Commit and close
+            conn.commit()
+            conn.close()
+        except sqlite3.Error as e:
+            show_warning_msg(e)
 
 
 def update_user_data(first_name, last_name, email, pin):
-    # Connect to DB
-    conn = sqlite3.connect(config.config[CFG_PATH])
-    cursor = conn.cursor()
+    """Updates user data given new: firstname, lastname, email, and pin."""
+    if not exists(config.config[CFG_PATH]):
+        show_warning_msg(MSG_DB_INACCESSIBLE)
+    else:
+        try:
+            # Connect to DB
+            conn = sqlite3.connect(config.config[CFG_PATH])
+            cursor = conn.cursor()
 
-    # Hash user pin
-    salt = bcrypt.gensalt()
-    hashed_pin = bcrypt.hashpw(pin.encode(), salt)
+            # Hash user pin
+            salt = bcrypt.gensalt()
+            hashed_pin = bcrypt.hashpw(pin.encode(), salt)
 
-    # Update query
-    cursor.execute(f"""
-        UPDATE {DB_USERS_TABLE}
-        SET {DB_FIRST_NAME} = ?, {DB_LAST_NAME} = ?, {DB_EMAIL} = ?, {DB_PIN} = ?
-        WHERE {DB_USER_ID} = ?
-    """, (first_name, last_name, email, hashed_pin, config.my_id))
+            # Update query
+            cursor.execute(f"""
+                UPDATE {DB_USERS_TABLE}
+                SET {DB_FIRST_NAME} = ?, {DB_LAST_NAME} = ?, {DB_EMAIL} = ?, {DB_PIN} = ?
+                WHERE {DB_USER_ID} = ?
+            """, (first_name, last_name, email, hashed_pin, config.my_id))
 
-    # Commit and close
-    conn.commit()
-    conn.close()
+            # Commit and close
+            conn.commit()
+            conn.close()
+        except sqlite3.Error as e:
+            show_warning_msg(e)
 
 
 def check_login(email, pin):
-    """Verifies login by checking email-based user ID and hashed PIN."""
+    """Verifies login by checking email-based user ID and hashed pin."""
+    if not exists(config.config[CFG_PATH]):  # Ensure database exists
+        show_warning_msg(MSG_DB_INACCESSIBLE)
+    else:
+        try:
+            # Connect to main DB
+            conn = sqlite3.connect(config.config[CFG_PATH])
+            cursor = conn.cursor()
 
-    if exists(config.config[CFG_PATH]):  # Ensure database exists
-        # Connect to main DB
-        conn = sqlite3.connect(config.config[CFG_PATH])
-        cursor = conn.cursor()
+            # Retrieve user ID and hashed PIN from registered email
+            cursor.execute(f"SELECT {DB_USER_ID}, {DB_PIN} FROM {DB_USERS_TABLE} WHERE {DB_EMAIL} = ?",
+                           (email,))
+            result = cursor.fetchone()
 
-        # Retrieve user ID and hashed PIN from registered email
-        cursor.execute(f"SELECT {DB_USER_ID}, {DB_PIN} FROM {DB_USERS_TABLE} WHERE {DB_EMAIL} = ?",
-                       (email,))
-        result = cursor.fetchone()
+            if result:
+                user_id, hashed_pin = result  # Extract user ID and hashed PIN
+                raw = pin.encode('utf-8')  # Convert input PIN to bytes
 
-        if result:
-            user_id, hashed_pin = result  # Extract user ID and hashed PIN
-            raw = pin.encode('utf-8')  # Convert input PIN to bytes
+                # Securely check hashed PIN
+                if bcrypt.checkpw(raw, hashed_pin):
+                    config.my_id = user_id
+                    return True  # Successful login
 
-            # Securely check hashed PIN
-            if bcrypt.checkpw(raw, hashed_pin):
-                config.my_id = user_id
-                return True  # Successful login
+                return False  # Incorrect PIN
+        except sqlite3.Error as e:
+            show_warning_msg(e)
 
-            return False  # Incorrect PIN
-
-        return None  # Invalid email (not registered)
-
-    return None  # Database file inaccessible or doesn't exist
+    return None  # Missing/Inaccessible DB or invalid email
 
 
 def create_db():
-    # Ensure creating new main DB only if directory exists not in case of lost connection with local server
+    """Creates new DB only if it does not exist."""
     if not exists(config.config[CFG_PATH]):
+        try:
+            # Create and connect to SQLite database
+            conn = sqlite3.connect(config.config[CFG_PATH])
+            cursor = conn.cursor()
 
-        # Create and connect to SQLite database
-        conn = sqlite3.connect(config.config[CFG_PATH])
-        cursor = conn.cursor()
-
-        # Create users table
-        cursor.execute(f"""
-        CREATE TABLE {DB_USERS_TABLE} (
-            {DB_USER_ID}    INTEGER UNIQUE,
-            {DB_FIRST_NAME}     TEXT NOT NULL,
-            {DB_LAST_NAME}      TEXT NOT NULL,
-            {DB_EMAIL}          TEXT NOT NULL UNIQUE,
-            {DB_PIN}            BLOB NOT NULL,
-            {DB_SEEN_AT}        TEXT DEFAULT (datetime('now', 'localtime')),
-            {DB_REGISTERED_AT}  TEXT DEFAULT (datetime('now', 'localtime')),
-            {DB_ACTIVE}         INTEGER DEFAULT 1,
-            PRIMARY KEY({DB_USER_ID} AUTOINCREMENT)
-        );
-        """)
-
-        # Create tasks table
-        cursor.execute(f"""
-        CREATE TABLE {DB_TASKS_TABLE} (
-            {DB_TASK_ID}		INTEGER UNIQUE,
-            {DB_SENDER_ID}		INTEGER NOT NULL,
-            {DB_RECEIVER_ID}	INTEGER NOT NULL,
-            {DB_CREATED_AT}	    TEXT DEFAULT (datetime('now', 'localtime')),
-            {DB_MODIFIED_AT}	TEXT DEFAULT (datetime('now', 'localtime')),
-            {DB_TITLE}			TEXT,
-            {DB_BODY}			TEXT,
-            {DB_REFERENCE}		TEXT,
-            {DB_DUE_AT}		    TEXT,
-            {DB_STARRED}		INTEGER,
-            {DB_DONE}		    INTEGER,
-            {DB_EXPECTED_AT}	TEXT,
-            {DB_REPLY}			TEXT,
-            {DB_ARCHIVED}		INTEGER,
-            PRIMARY KEY({DB_TASK_ID} AUTOINCREMENT),
-            FOREIGN KEY({DB_SENDER_ID}) REFERENCES {DB_USERS_TABLE}({DB_USER_ID}),
-            FOREIGN KEY({DB_RECEIVER_ID}) REFERENCES {DB_USERS_TABLE}({DB_USER_ID})
-        );
-        """)
-
-        # Create report view
-        cursor.execute(f"""
-            CREATE VIEW {DB_REPORT_VIEW} AS
-                SELECT
-                    {DB_TASKS_TABLE}.{DB_TASK_ID} AS {UI_TASK_ID.replace(" ", "_")},
-                    {DB_TASKS_TABLE}.{DB_MODIFIED_AT} AS {UI_MODIFIED_AT.replace(" ", "_")},
-                    CONCAT(sender.{DB_FIRST_NAME}, ' ', sender.{DB_LAST_NAME}) AS {UI_SENDER.replace(" ", "_")},
-                    CONCAT(receiver.{DB_FIRST_NAME}, ' ', receiver.{DB_LAST_NAME}) AS {UI_RECEIVER.replace(" ", "_")},
-                    {DB_TASKS_TABLE}.{DB_TITLE} AS {UI_TASK.replace(" ", "_")},
-                    {DB_TASKS_TABLE}.{DB_DUE_AT} AS {UI_DUE_AT.replace(" ", "_")},
-                    {DB_TASKS_TABLE}.{DB_DONE} AS {UI_DONE.replace(" ", "_")},
-
-                    CASE
-                        WHEN {DB_TASKS_TABLE}.{DB_DONE} = 0 THEN
-                            CAST((julianday('now') - julianday({DB_TASKS_TABLE}.{DB_DUE_AT})) AS INTEGER)
-                        ELSE NULL
-                    END AS {UI_DELAY}
-
-                FROM
-                    {DB_TASKS_TABLE}
-                JOIN {DB_USERS_TABLE} AS sender ON {DB_TASKS_TABLE}.{DB_SENDER_ID} = sender.{DB_USER_ID}
-                JOIN {DB_USERS_TABLE} AS receiver ON {DB_TASKS_TABLE}.{DB_RECEIVER_ID} = receiver.{DB_USER_ID}
-                WHERE {DB_TASKS_TABLE}.{DB_STARRED} = 1 AND {DB_TASKS_TABLE}.{DB_ARCHIVED} = 0;
+            # Create users table
+            cursor.execute(f"""
+            CREATE TABLE {DB_USERS_TABLE} (
+                {DB_USER_ID}    INTEGER UNIQUE,
+                {DB_FIRST_NAME}     TEXT NOT NULL,
+                {DB_LAST_NAME}      TEXT NOT NULL,
+                {DB_EMAIL}          TEXT NOT NULL UNIQUE,
+                {DB_PIN}            BLOB NOT NULL,
+                {DB_SEEN_AT}        TEXT DEFAULT (datetime('now', 'localtime')),
+                {DB_REGISTERED_AT}  TEXT DEFAULT (datetime('now', 'localtime')),
+                {DB_ACTIVE}         INTEGER DEFAULT 1,
+                PRIMARY KEY({DB_USER_ID} AUTOINCREMENT)
+            );
             """)
 
-        # Update sqlite_sequence
-        dummy_text = "dummy_text"
-        dummy_int = DB_USERS_ID_BASE
+            # Create tasks table
+            cursor.execute(f"""
+            CREATE TABLE {DB_TASKS_TABLE} (
+                {DB_TASK_ID}		INTEGER UNIQUE,
+                {DB_SENDER_ID}		INTEGER NOT NULL,
+                {DB_RECEIVER_ID}	INTEGER NOT NULL,
+                {DB_CREATED_AT}	    TEXT DEFAULT (datetime('now', 'localtime')),
+                {DB_MODIFIED_AT}	TEXT DEFAULT (datetime('now', 'localtime')),
+                {DB_TITLE}			TEXT,
+                {DB_BODY}			TEXT,
+                {DB_REFERENCE}		TEXT,
+                {DB_DUE_AT}		    TEXT,
+                {DB_STARRED}		INTEGER,
+                {DB_DONE}		    INTEGER,
+                {DB_EXPECTED_AT}	TEXT,
+                {DB_REPLY}			TEXT,
+                {DB_ARCHIVED}		INTEGER,
+                PRIMARY KEY({DB_TASK_ID} AUTOINCREMENT),
+                FOREIGN KEY({DB_SENDER_ID}) REFERENCES {DB_USERS_TABLE}({DB_USER_ID}),
+                FOREIGN KEY({DB_RECEIVER_ID}) REFERENCES {DB_USERS_TABLE}({DB_USER_ID})
+            );
+            """)
 
-        cursor.execute(
-            f"INSERT INTO {DB_USERS_TABLE} ({DB_FIRST_NAME}, {DB_LAST_NAME}, {DB_EMAIL}, {DB_PIN}) VALUES ('{dummy_text}', '{dummy_text}', '{dummy_text}', '{dummy_text}')")
-        cursor.execute(f"DELETE FROM {DB_USERS_TABLE} WHERE {DB_EMAIL} = '{dummy_text}'")
+            # Create report view
+            cursor.execute(f"""
+                CREATE VIEW {DB_REPORT_VIEW} AS
+                    SELECT
+                        {DB_TASKS_TABLE}.{DB_TASK_ID} AS {UI_TASK_ID.replace(" ", "_")},
+                        {DB_TASKS_TABLE}.{DB_MODIFIED_AT} AS {UI_MODIFIED_AT.replace(" ", "_")},
+                        CONCAT(sender.{DB_FIRST_NAME}, ' ', sender.{DB_LAST_NAME}) AS {UI_SENDER.replace(" ", "_")},
+                        CONCAT(receiver.{DB_FIRST_NAME}, ' ', receiver.{DB_LAST_NAME}) AS {UI_RECEIVER.replace(" ", "_")},
+                        {DB_TASKS_TABLE}.{DB_TITLE} AS {UI_TASK.replace(" ", "_")},
+                        {DB_TASKS_TABLE}.{DB_DUE_AT} AS {UI_DUE_AT.replace(" ", "_")},
+                        {DB_TASKS_TABLE}.{DB_DONE} AS {UI_DONE.replace(" ", "_")},
+    
+                        CASE
+                            WHEN {DB_TASKS_TABLE}.{DB_DONE} = 0 THEN
+                                CAST((julianday('now') - julianday({DB_TASKS_TABLE}.{DB_DUE_AT})) AS INTEGER)
+                            ELSE NULL
+                        END AS {UI_DELAY}
+    
+                    FROM
+                        {DB_TASKS_TABLE}
+                    JOIN {DB_USERS_TABLE} AS sender ON {DB_TASKS_TABLE}.{DB_SENDER_ID} = sender.{DB_USER_ID}
+                    JOIN {DB_USERS_TABLE} AS receiver ON {DB_TASKS_TABLE}.{DB_RECEIVER_ID} = receiver.{DB_USER_ID}
+                    WHERE {DB_TASKS_TABLE}.{DB_STARRED} = 1 AND {DB_TASKS_TABLE}.{DB_ARCHIVED} = 0;
+                """)
 
-        cursor.execute(
-            f"INSERT INTO {DB_TASKS_TABLE} ({DB_SENDER_ID}, {DB_RECEIVER_ID}, {DB_TITLE}) VALUES ({dummy_int}, {dummy_int}, '{dummy_text}')")
-        cursor.execute(f"DELETE FROM {DB_TASKS_TABLE} WHERE {DB_TITLE} = '{dummy_text}'")
+            # Update sqlite_sequence
+            dummy_text = "dummy_text"
+            dummy_int = DB_USERS_ID_BASE
 
-        cursor.execute(f"UPDATE sqlite_sequence SET seq = {DB_USERS_ID_BASE} WHERE name = '{DB_USERS_TABLE}'")
-        cursor.execute(f"UPDATE sqlite_sequence SET seq = {DB_TASKS_ID_BASE} WHERE name = '{DB_TASKS_TABLE}'")
+            cursor.execute(
+                f"INSERT INTO {DB_USERS_TABLE} ({DB_FIRST_NAME}, {DB_LAST_NAME}, {DB_EMAIL}, {DB_PIN}) VALUES ('{dummy_text}', '{dummy_text}', '{dummy_text}', '{dummy_text}')")
+            cursor.execute(f"DELETE FROM {DB_USERS_TABLE} WHERE {DB_EMAIL} = '{dummy_text}'")
 
-        # Commit changes and close connection
-        conn.commit()
-        conn.close()
+            cursor.execute(
+                f"INSERT INTO {DB_TASKS_TABLE} ({DB_SENDER_ID}, {DB_RECEIVER_ID}, {DB_TITLE}) VALUES ({dummy_int}, {dummy_int}, '{dummy_text}')")
+            cursor.execute(f"DELETE FROM {DB_TASKS_TABLE} WHERE {DB_TITLE} = '{dummy_text}'")
 
-        return True
+            cursor.execute(f"UPDATE sqlite_sequence SET seq = {DB_USERS_ID_BASE} WHERE name = '{DB_USERS_TABLE}'")
+            cursor.execute(f"UPDATE sqlite_sequence SET seq = {DB_TASKS_ID_BASE} WHERE name = '{DB_TASKS_TABLE}'")
+
+            # Commit changes and close connection
+            conn.commit()
+            conn.close()
+
+            return True
+        except sqlite3.Error as e:
+            show_warning_msg(e)
     return False
 
 

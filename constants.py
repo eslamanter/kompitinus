@@ -6,7 +6,7 @@ DEV_EMAIL = 'eslam.anter@outlook.com'
 # App info
 APP_NAME = 'Kompitinus'
 APP_VERSION = '1.0'
-APP_PHASE = 'Alpha'
+APP_PHASE = 'Beta'
 APP_YEAR = '2025'
 
 # ---------- App About/Copyright/Disclaimer (Italian) ----------
