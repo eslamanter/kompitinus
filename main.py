@@ -10,11 +10,14 @@ from main_ui import MainWindow
 
 
 def main():
-    app = QApplication(sys.argv)
-    check_config()
-    main_ui = MainWindow()
-    main_ui.show()
-    sys.exit(app.exec())
+    try:
+        app = QApplication(sys.argv)
+        check_config()
+        main_ui = MainWindow()
+        main_ui.show()
+        sys.exit(app.exec())
+    except Exception as e:
+        show_warning_msg(e)
 
 
 def check_config():
