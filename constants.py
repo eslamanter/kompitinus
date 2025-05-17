@@ -169,7 +169,7 @@ MSG_LOGOUT = "Sei sicure di voler uscire?"
 MSG_CLOSE = "Sei sicuro di voler chiudere?"
 
 # Help
-README_URL = f"https://raw.githubusercontent.com/eslamanter/{APP_NAME.lower()}/main/README.md"
+README_URL = f"https://raw.githubusercontent.com/eslamanter/kompitinus-ita/main/README.md"
 
 # Errors
 ERR_GUI = "GUI ERROR"
