@@ -91,10 +91,6 @@ def playsound_hand():
     winsound.MessageBeep(winsound.MB_ICONHAND)
 
 
-def playsound_exclamation():
-    winsound.MessageBeep(winsound.MB_ICONEXCLAMATION)
-
-
 def playsound_ok():
     winsound.MessageBeep(winsound.MB_OK)
 

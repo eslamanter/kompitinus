@@ -16,6 +16,9 @@ APP_COPYRIGHT = (f"© {APP_YEAR} {DEV_NAME}. Tutti i diritti riservati.\n"
 APP_DISCLAIMER = (f"ESCLUSIONE DI RESPONSABILITÀ:\n"
                   "Questo software è distribuito senza alcuna garanzia di prestazioni o risultati.")
 
+# Company working hours
+WORKING_HOURS = (9, 18) # 09:00 - 18:59
+
 # Config
 CFG_FILE = "config.json"
     # Json Config File
@@ -90,8 +93,9 @@ UI_SENDER = "Da"
 UI_RECEIVER = "A"
 UI_SEND_EMAIL_TO = "Invia una mail a"
 UI_TASK = "Compito"
+UI_MAX_TITLE_LEN = 160
 UI_STARRED = "Contrassegnato"
-UI_STARRED_TIP = "Contrassegnato Tip"
+UI_STARRED_TIP = "Contrassegnato Tip" #------------------------
 UI_ARCHIVED = "Archiviato"
 UI_ARCHIVED_TIP = "Archiviato Tip"
 
@@ -108,6 +112,8 @@ UI_REFERENCE_DELETE = "Cancella Link"
 UI_DUE_AT = "Scade il"
 UI_EXPECTED_AT = "Previsto il"
 UI_DAYS = "gg"
+UI_HOLIDAY = "Giorno non lavorativo!"
+UI_OUTSIDE_HOURS = "Fuori orari lavorativi!"
 UI_REPLY = "Risposta"
 UI_DONE = "Fatto"
 UI_DONE_TIP = "Fatto Tip"

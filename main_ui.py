@@ -2,17 +2,20 @@ import sys
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QFrame, QTableView, QSplitter, QLineEdit,
     QTextEdit, QCheckBox, QPushButton, QDateTimeEdit, QTreeView, QStatusBar, QMenu, QAction, QToolButton,
-    QHeaderView, QAbstractItemView)
-from PyQt5.QtGui import QStandardItemModel, QStandardItem, QCursor, QBrush, QColor
-from PyQt5.QtCore import Qt, QDateTime
+    QHeaderView, QAbstractItemView, QCalendarWidget)
+from PyQt5.QtGui import QStandardItemModel, QStandardItem, QCursor, QBrush, QColor, QTextCharFormat
+from PyQt5.QtCore import Qt, QDateTime, QDate
 from readme_ui import ReadmeViewer
 from about_ui import AboutScreen
 from constants import *
 from sqlite_db import (get_all_users, add_task, update_task, get_tasks, get_task_details, get_user_full_name,
                        get_user_email, export_report_view)
 from user_ui import UserUpdate
-from utils import send_email, select_directory_dialog, get_directory, show_question_msg, next_working_midday, count_days
+from utils import (send_email, select_directory_dialog, get_directory, show_question_msg, next_working_midday,
+                   count_days, playsound_ok)
+from datetime import date
 import config
+import holidays
 
 
 class TaskTableModel(QStandardItemModel):
@@ -218,7 +221,7 @@ class MainWindow(QMainWindow):
 
         # Task title input
         self.title_input = QLineEdit()
-        self.title_input.setMaxLength(160)
+        self.title_input.setMaxLength(UI_MAX_TITLE_LEN)
         self.title_input.setPlaceholderText(UI_PLACEHOLDER_TITLE)
         self.title_input.setReadOnly(True)
         main_vertical_layout.addWidget(self.title_input)
@@ -399,13 +402,106 @@ class MainWindow(QMainWindow):
         self.current_task_id = None # Stores current task ID. Stores None if no task selected or upon sending a new task
         self.new_receiver_id = None # Stores new task receiver user ID. Stores None if task exists
 
-        # Connect input changes to send button enabling
+        # Setup calendars to highlight Italy holidays in red
+        current_year = QDate.currentDate().year()
+        self.italy_holidays = holidays.Italy(years=[current_year, current_year + 1])
+        self.setup_calendars()
+
+        # Connect input changes to send button enabling/update days to deadline
         for date_time_input in self.date_time_inputs:
             date_time_input.dateTimeChanged.connect(self.check_send_button)
+            date_time_input.dateTimeChanged.connect(self.update_due_expected_days)
         for text_input in self.text_inputs:
             text_input.textChanged.connect(self.check_send_button)
         for checkbox in self.resettable_checkboxes:
             checkbox.stateChanged.connect(self.check_send_button)
+        self.done_checkbox.stateChanged.connect(self.update_due_expected_days)
+
+    def highlight_selected_deadlines(self):
+        selected_datetime_due = self.due_at_input.dateTime()
+        selected_datetime_expected = self.expected_at_input.dateTime()
+
+        # Convert to QDate & QTime for checks
+        selected_date_due = selected_datetime_due.date()
+        selected_time_due = selected_datetime_due.time()
+
+        selected_date_expected = selected_datetime_expected.date()
+        selected_time_expected = selected_datetime_expected.time()
+
+        # Check if the selected date is a holiday or weekend
+        def is_special_date(qdate):
+            # Convert QDate to Python date
+            py_date = date(qdate.year(), qdate.month(), qdate.day())
+            # Check if it's a holiday or weekend
+            return py_date in self.italy_holidays or qdate.dayOfWeek() in [6, 7]  # Saturday = 6, Sunday = 7
+
+        # Check if time is outside working hours (before 09:00 or after 19:00)
+        def is_outside_working_hours(qtime):
+            return qtime.hour() < WORKING_HOURS[0] or qtime.hour() > WORKING_HOURS[1]
+
+        # Apply red color if it's a holiday, weekend, or outside working hours
+        if is_special_date(selected_date_due):
+            due_style = "color: red;"
+            self.due_at_input.setToolTip(UI_HOLIDAY)
+        elif is_outside_working_hours(selected_time_due):
+            due_style = "color: red;"
+            self.due_at_input.setToolTip(UI_OUTSIDE_HOURS)
+        else:
+            due_style = "color: black;"
+            self.due_at_input.setToolTip("")
+
+        if is_special_date(selected_date_expected):
+            expected_style = "color: red;"
+            self.expected_at_input.setToolTip(UI_HOLIDAY)
+        elif is_outside_working_hours(selected_time_expected):
+            expected_style = "color: red;"
+            self.expected_at_input.setToolTip(UI_OUTSIDE_HOURS)
+        else:
+            expected_style = "color: black;"
+            self.expected_at_input.setToolTip("")
+
+        self.due_at_input.setStyleSheet(due_style)
+        self.expected_at_input.setStyleSheet(expected_style)
+
+    def setup_calendars(self):
+        """Sets up calendars to highlight Italy holidays."""
+        # Get the calendar widget from QDateTimeEdit (popup instance)
+        due_at_calendar = self.due_at_input.calendarWidget()
+        expected_at_calendar = self.expected_at_input.calendarWidget()
+
+        # Format for holidays (red text)
+        holiday_format = QTextCharFormat()
+        holiday_format.setForeground(QColor("red"))
+
+        # Apply formatting to holiday dates
+        for date in self.italy_holidays.keys():
+            qdate = QDate(date.year, date.month, date.day)
+            due_at_calendar.setDateTextFormat(qdate, holiday_format)
+            expected_at_calendar.setDateTextFormat(qdate, holiday_format)
+
+        self.due_at_input.dateTimeChanged.connect(self.highlight_selected_deadlines)
+        self.expected_at_input.dateTimeChanged.connect(self.highlight_selected_deadlines)
+
+    def update_due_expected_days(self):
+        due_at = self.due_at_input.text() + ":00"
+        days_to_due = count_days(deadline=due_at)
+        expected_at = self.expected_at_input.text() + ":00"
+        days_to_expected = count_days(deadline=expected_at)
+
+        if self.done_checkbox.isChecked():
+            self.due_at_days.setText("")
+            self.expected_at_days.setText("")
+        else:
+            self.due_at_days.setText(f"{days_to_due} {UI_DAYS}")
+            if days_to_due < 0:
+                self.due_at_days.setStyleSheet("color: red;")
+            else:
+                self.due_at_days.setStyleSheet("color: black;")
+            self.expected_at_days.setText(f"{days_to_expected} {UI_DAYS}")
+            if days_to_expected < 0:
+                self.expected_at_days.setStyleSheet("color: red;")
+            else:
+                self.expected_at_days.setStyleSheet("color: black;")
 
     def set_treeview_readonly(self):
         """Disable editing for all items in the tree view."""
@@ -447,7 +543,7 @@ class MainWindow(QMainWindow):
             lambda: send_email(email=receiver_email, title=f"{UI_TASK} {task_id}"))
 
     def on_table_row_selected(self):
-        """Retrieve task ID from the selected row """
+        """Retrieve task ID from the selected row and fill task details panel."""
         item_index = self.table_view.selectionModel().currentIndex()
         id_col_index =  self.table_view.model().index(item_index.row(), 0)
         self.current_task_id = self.table_view.model().data(id_col_index, Qt.UserRole)
@@ -458,51 +554,27 @@ class MainWindow(QMainWindow):
 
         self.task_id_value.setText(str(task_id))
         self.show_sender_receiver_info(task_id=task_id, sender_id=sender_id, receiver_id=receiver_id)
+
         self.created_at_value.setText(created_at)
         self.modified_at_value.setText(modified_at)
+
         self.title_input.setText(title)
         self.body_input.setText(body)
+        self.reply_input.setText(reply)
+
         self.reference_label.setText(f'<a href={reference}>{UI_REFERENCE}:</a>')
         self.reference_label.setToolTip(reference)
 
-        days_to_due = count_days(deadline=due_at)
-        due_at = due_at[:16]
-        self.due_at_input.setDateTime(QDateTime.fromString(due_at,"yyyy-MM-dd HH:mm"))
+        self.due_at_input.setDateTime(QDateTime.fromString(due_at[:16],"yyyy-MM-dd HH:mm"))
+        self.expected_at_input.setDateTime(QDateTime.fromString(expected_at[:16], "yyyy-MM-dd HH:mm"))
 
-        if starred:
-            self.starred_checkbox.setChecked(True)
-        else:
-            self.starred_checkbox.setChecked(False)
-        if done:
-            self.done_checkbox.setChecked(True)
-        else:
-            self.done_checkbox.setChecked(False)
+        self.starred_checkbox.setChecked(bool(starred))
+        self.done_checkbox.setChecked(bool(done))
+        self.archived_checkbox.setChecked(bool(archived))
 
-        days_to_expected = count_days(deadline=expected_at)
-        expected_at = expected_at[:16]
-        self.expected_at_input.setDateTime(QDateTime.fromString(expected_at,"yyyy-MM-dd HH:mm"))
-
-        self.reply_input.setText(reply)
-        if archived:
-            self.archived_checkbox.setChecked(True)
-        else:
-            self.archived_checkbox.setChecked(False)
         self.send_button.setEnabled(False)
-
-        if self.done_checkbox.isChecked():
-            self.due_at_days.setText("")
-            self.expected_at_days.setText("")
-        else:
-            self.due_at_days.setText(f"{days_to_due} {UI_DAYS}")
-            if days_to_due < 0:
-                self.due_at_days.setStyleSheet("color: red;")
-            else:
-                self.due_at_days.setStyleSheet("color: black;")
-            self.expected_at_days.setText(f"{days_to_expected} {UI_DAYS}")
-            if days_to_expected < 0:
-                self.expected_at_days.setStyleSheet("color: red;")
-            else:
-                self.expected_at_days.setStyleSheet("color: black;")
+        self.update_due_expected_days()
+        self.highlight_selected_deadlines()
 
     def on_tree_item_selected(self):
         """Handles selecting a user item in the TreeView."""
@@ -556,6 +628,8 @@ class MainWindow(QMainWindow):
         if user_id:
             self.new_receiver_id = user_id
             self.show_sender_receiver_info(config.my_id, self.new_receiver_id)
+            self.update_due_expected_days()
+            self.highlight_selected_deadlines()
             self.set_send_mode()
 
     def send_task(self):
@@ -572,6 +646,7 @@ class MainWindow(QMainWindow):
                                         done=1 if self.done_checkbox.isChecked() else 0,
                                         task_id=self.current_task_id)
             if update_result:
+                playsound_ok()
                 self.status_bar.showMessage(f"{UI_TASK} {self.current_task_id} {UI_TASK_UPDATED}")
                 # Select a dummy index then the previously selected index of the TreeView to update the TableView
                 previous_index = self.tree_view.selectionModel().currentIndex()
@@ -591,6 +666,7 @@ class MainWindow(QMainWindow):
                                    starred=1 if self.starred_checkbox.isChecked() else 0,
                                    archived=1 if self.archived_checkbox.isChecked() else 0)
             if new_task_id:
+                playsound_ok()
                 self.status_bar.showMessage(f"{UI_TASK} {new_task_id} {UI_TASK_SENT}")
                 # Select the Outbox index of the TreeView to show the updated TableView
                 outbox_index = self.tree_model.index(1, 0, self.tree_model.index(0, 0))

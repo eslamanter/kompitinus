@@ -119,9 +119,9 @@ class UserSignup(UserDialog):
         if email_exists(self.email_input.text()):
             show_info_msg(text=MSG_EMAIL_EXISTS)
         else:
-            add_new_user(first_name=self.first_name_input.text().title(),
-                         last_name=self.last_name_input.text().title(),
-                         email=self.email_input.text().lower(),
+            add_new_user(first_name=self.first_name_input.text().strip().title(),
+                         last_name=self.last_name_input.text().strip().title(),
+                         email=self.email_input.text().strip().lower(),
                          pin=self.pin_input.text())
 
             config.config[CFG_EMAIL] = self.email_input.text()
@@ -199,9 +199,9 @@ class UserUpdate(UserDialog):
 
     def user_update(self):
         if self.email_input.text() == config.config[CFG_EMAIL] or not email_exists(self.email_input.text()):
-            update_user_data(first_name=self.first_name_input.text().title(),
-                             last_name=self.last_name_input.text().title(),
-                             email=self.email_input.text().lower(),
+            update_user_data(first_name=self.first_name_input.text().strip().title(),
+                             last_name=self.last_name_input.text().strip().title(),
+                             email=self.email_input.text().strip().lower(),
                              pin=self.pin_input.text())
 
             if config.config[CFG_EMAIL] != self.email_input.text() or config.config[CFG_PIN] != self.pin_input.text():
