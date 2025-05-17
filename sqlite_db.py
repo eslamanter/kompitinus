@@ -1,13 +1,89 @@
+import os
 import sqlite3
 import bcrypt
 import config
+import pandas as pd
+from openpyxl import load_workbook, Workbook
 from PyQt5.QtCore import QDateTime
-from utils import exists
+from utils import exists, show_warning_msg
 from constants import (DB_USERS_ID_BASE, DB_USERS_TABLE, DB_USER_ID,
                        DB_FIRST_NAME, DB_LAST_NAME, DB_EMAIL, DB_PIN, DB_REGISTERED_AT, DB_ACTIVE, DB_TASKS_ID_BASE,
                        DB_TASKS_TABLE, DB_TASK_ID, DB_SENDER_ID, DB_RECEIVER_ID, DB_CREATED_AT, DB_MODIFIED_AT,
                        DB_TITLE, DB_BODY, DB_REFERENCE, DB_DUE_AT, DB_STARRED, DB_DONE, DB_EXPECTED_AT, DB_REPLY,
-                       DB_ARCHIVED, CFG_PATH, DB_SEEN_AT, UI_INBOX, UI_OUTBOX, UI_EXPIRED_BOX, UI_STARRED_BOX)
+                       DB_ARCHIVED, CFG_PATH, DB_SEEN_AT, UI_INBOX, UI_OUTBOX, UI_EXPIRED_BOX, UI_STARRED_BOX,
+                       UI_TASK_ID, UI_MODIFIED_AT, UI_SENDER, UI_RECEIVER, UI_TASK, UI_DUE_AT, DB_REPORT_VIEW, UI_DELAY,
+                       UI_DONE, MSG_EXCEL_OPENED, MSG_DB_INACCESSIBLE)
+
+
+def export_report_view():
+    if not exists(config.config[CFG_PATH]):
+        show_warning_msg(MSG_DB_INACCESSIBLE)
+    else:
+        try:
+            # Connect to the database
+            conn = sqlite3.connect(config.config[CFG_PATH])
+
+            # Query the view
+            query = f"SELECT * FROM {DB_REPORT_VIEW}"
+            df = pd.read_sql_query(query, conn)
+
+            # Define Excel file path
+            excel_path = f"{DB_REPORT_VIEW}.xlsx"
+
+            # Generate a sheet name using current date and time
+            sheet_name = QDateTime.currentDateTime().toString("yyyy-MM-dd_HH-mm-ss")
+
+            # Check if file exists
+            if exists(excel_path):
+                # Load existing workbook
+                wb = load_workbook(excel_path)
+            else:
+                # Create new workbook and remove default sheet
+                wb = Workbook()
+                default_sheet = wb.active
+                wb.remove(default_sheet)
+                ws = wb.create_sheet(title=sheet_name)  # Create new sheet as the first sheet
+
+            # If loading an existing file, create a new sheet
+            if sheet_name not in wb.sheetnames:
+                ws = wb.create_sheet(title=sheet_name)
+
+            # Write dataframe to the new sheet
+            for r_idx, row in enumerate(df.values, start=2):  # Start from row 2 to leave space for headers
+                for c_idx, value in enumerate(row, start=1):
+                    ws.cell(row=r_idx, column=c_idx, value=value)
+
+            # Add headers manually
+            for c_idx, header in enumerate(df.columns, start=1):
+                ws.cell(row=1, column=c_idx, value=header)
+
+            # Add filters to the first row
+            ws.auto_filter.ref = ws.dimensions
+
+            # List of columns to adjust
+            columns = ["A", "B", "C", "D", "E", "F", "G", "H"]
+
+            # Adjust column width based on content
+            for col_letter in columns:
+                col_idx = ws[col_letter]
+                max_length = max((len(str(cell.value)) for cell in col_idx if cell.value), default=0)
+                ws.column_dimensions[col_letter].width = max_length + 2  # Adding padding
+
+            # Set the last created worksheet as the active sheet
+            wb.active = len(wb.sheetnames) - 1
+
+            # Save the updated Excel file
+            wb.save(excel_path)
+
+            # Close connection
+            conn.close()
+            os.startfile(excel_path)
+            return True
+        except PermissionError:
+            show_warning_msg(MSG_EXCEL_OPENED)
+        except Exception as e:
+            show_warning_msg(e)
+    return False
 
 
 def get_task_details(task_id):
@@ -177,7 +253,7 @@ def email_exists(email):
 
 
 def get_user_email(user_id):
-    """Retrieves email for the given user ID."""
+    """Retrieves email as string for the given user ID."""
 
     try:
         # Connect to the database
@@ -353,6 +429,31 @@ def create_db():
             FOREIGN KEY({DB_RECEIVER_ID}) REFERENCES {DB_USERS_TABLE}({DB_USER_ID})
         );
         """)
+
+        # Create report view
+        cursor.execute(f"""
+            CREATE VIEW {DB_REPORT_VIEW} AS
+                SELECT
+                    {DB_TASKS_TABLE}.{DB_TASK_ID} AS {UI_TASK_ID.replace(" ", "_")},
+                    {DB_TASKS_TABLE}.{DB_MODIFIED_AT} AS {UI_MODIFIED_AT.replace(" ", "_")},
+                    CONCAT(sender.{DB_FIRST_NAME}, ' ', sender.{DB_LAST_NAME}) AS {UI_SENDER.replace(" ", "_")},
+                    CONCAT(receiver.{DB_FIRST_NAME}, ' ', receiver.{DB_LAST_NAME}) AS {UI_RECEIVER.replace(" ", "_")},
+                    {DB_TASKS_TABLE}.{DB_TITLE} AS {UI_TASK.replace(" ", "_")},
+                    {DB_TASKS_TABLE}.{DB_DUE_AT} AS {UI_DUE_AT.replace(" ", "_")},
+                    {DB_TASKS_TABLE}.{DB_DONE} AS {UI_DONE.replace(" ", "_")},
+
+                    CASE
+                        WHEN {DB_TASKS_TABLE}.{DB_DONE} = 0 THEN
+                            CAST((julianday('now') - julianday({DB_TASKS_TABLE}.{DB_DUE_AT})) AS INTEGER)
+                        ELSE NULL
+                    END AS {UI_DELAY}
+
+                FROM
+                    {DB_TASKS_TABLE}
+                JOIN {DB_USERS_TABLE} AS sender ON {DB_TASKS_TABLE}.{DB_SENDER_ID} = sender.{DB_USER_ID}
+                JOIN {DB_USERS_TABLE} AS receiver ON {DB_TASKS_TABLE}.{DB_RECEIVER_ID} = receiver.{DB_USER_ID}
+                WHERE {DB_TASKS_TABLE}.{DB_STARRED} = 1 AND {DB_TASKS_TABLE}.{DB_ARCHIVED} = 0;
+            """)
 
         # Update sqlite_sequence
         dummy_text = "dummy_text"

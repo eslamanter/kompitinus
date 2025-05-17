@@ -55,16 +55,16 @@ DB_EXPECTED_AT = "expected_at"
 DB_REPLY = "reply"
 DB_ARCHIVED = "archived"
 DB_TASKS_ID_BASE = 100000
+    # Report
+DB_REPORT_VIEW = "report"
 
 # ---------- UI Text (Italian) ----------
     # Menubar
         # User Menu
 UI_USER_MENU = "Utente"
-UI_USER_DATA = "Dati utente"
+UI_USER_DATA = "Dati Utente"
         # Export
 UI_EXPORT_MENU = "Esporta"
-UI_PERSONAL_TASKS = "Compiti personali"
-UI_ALL_TASKS = "Tutti i compiti"
         # Info
 UI_INFO_MENU = "Info"
 UI_ABOUT = "App"
@@ -95,6 +95,10 @@ UI_STARRED_TIP = "Contrassegnato Tip"
 UI_ARCHIVED = "Archiviato"
 UI_ARCHIVED_TIP = "Archiviato Tip"
 
+UI_PLACEHOLDER_TITLE = "Titolo (Max 160 Caratteri)"
+UI_PLACEHOLDER_BODY = "Descrizione"
+UI_PLACEHOLDER_REPLY = "Risposta"
+
 UI_REFERENCE = "Riferimento"
 UI_REFERENCE_OPEN = "Seleziona cartella"
 UI_REFERENCE_COPY = "Copia Link"
@@ -108,6 +112,7 @@ UI_REPLY = "Risposta"
 UI_DONE = "Fatto"
 UI_DONE_TIP = "Fatto Tip"
 UI_SEND = "Invia"
+UI_DELAY = "Ritardo"
 
     # Statusbar
 UI_SELECTED = "Selezionato"
@@ -127,9 +132,9 @@ UI_CONNECT = "Connetti"
 UI_EMAIL = "Email"
 UI_PIN = "PIN"
 UI_LOGIN = "Accedi"
-UI_REGISTERED = "Utente registrato"
+UI_REGISTERED = "Utente Registrato"
 UI_SIGNUP = "Registrati"
-UI_NEW_USER = "Nuovo utente"
+UI_NEW_USER = "Nuovo Utente"
 
     # Sign Up UI
 UI_FIRST_NAME = "Nome"
@@ -145,11 +150,12 @@ UI_LOGOUT = "Esci"
 UI_CLOSE = "Chiudi"
 
 # Messages
-MSG_SELECT_DIR = "Select Folder"
-MSG_SELECT_FILE = "Select File"
+MSG_SELECT_DIR = "Seleziona Cartella"
+MSG_SELECT_FILE = "Seleziona File"
 
 MSG_DB_INACCESSIBLE = f"Database inaccessibile!"
 MSG_EMAIL_EXISTS = "Utente già registrato."
+MSG_EXCEL_OPENED = "Foglio Excel in uso."
 MSG_LOGOUT = "Sei sicure di voler uscire?"
 MSG_CLOSE = "Sei sicuro di voler chiudere?"
 

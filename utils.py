@@ -8,6 +8,12 @@ import winsound
 import config
 
 
+def count_days(deadline):
+    now = QDateTime.currentDateTime()
+    deadline = QDateTime.fromString(deadline, "yyyy-MM-dd HH:mm:ss")
+    return now.daysTo(deadline)
+
+
 def next_working_midday():
     tomorrow_date = QDateTime.currentDateTime().addDays(1)
     tomorrow_date.setTime(QTime(12, 0, 0))

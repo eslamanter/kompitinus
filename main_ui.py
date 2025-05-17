@@ -1,5 +1,4 @@
 import sys
-
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QFrame, QTableView, QSplitter, QLineEdit,
     QTextEdit, QCheckBox, QPushButton, QDateTimeEdit, QTreeView, QStatusBar, QMenu, QAction, QToolButton,
@@ -9,10 +8,10 @@ from PyQt5.QtCore import Qt, QDateTime
 from readme_ui import ReadmeViewer
 from about_ui import AboutScreen
 from constants import *
-from sqlite_db import get_all_users, add_task, update_task, get_tasks, get_task_details, get_user_full_name, \
-    get_user_email
+from sqlite_db import (get_all_users, add_task, update_task, get_tasks, get_task_details, get_user_full_name,
+                       get_user_email, export_report_view)
 from user_ui import UserUpdate
-from utils import send_email, select_directory_dialog, get_directory, show_question_msg, next_working_midday
+from utils import send_email, select_directory_dialog, get_directory, show_question_msg, next_working_midday, count_days
 import config
 
 
@@ -36,7 +35,7 @@ class TaskTableModel(QStandardItemModel):
             sender_full_name_item = QStandardItem(sender_full_name)
             receiver_full_name_item = QStandardItem(receiver_full_name)
             title_item = QStandardItem(title)
-            due_at_item = QStandardItem(due_at.replace(" ", "\n"))
+            due_at_item = QStandardItem(due_at[:16].replace(" ", "\n"))
 
             expired = True if current_time > due_at else False
 
@@ -147,7 +146,7 @@ class MainWindow(QMainWindow):
         self.left_splitter.addWidget(self.tree_view)
         self.left_splitter.addWidget(self.table_view)
         self.left_splitter.setStretchFactor(0, 1)
-        self.left_splitter.setStretchFactor(1, 2)
+        self.left_splitter.setStretchFactor(1, 3)
 
         # Left column: Task ID, Created At, Modified At
         left_meta_layout = QVBoxLayout()
@@ -219,11 +218,14 @@ class MainWindow(QMainWindow):
 
         # Task title input
         self.title_input = QLineEdit()
+        self.title_input.setMaxLength(160)
+        self.title_input.setPlaceholderText(UI_PLACEHOLDER_TITLE)
         self.title_input.setReadOnly(True)
         main_vertical_layout.addWidget(self.title_input)
 
         # Task body input
         self.body_input = QTextEdit()
+        self.body_input.setPlaceholderText(UI_PLACEHOLDER_BODY)
         self.body_input.setReadOnly(True)
         main_vertical_layout.addWidget(self.body_input)
 
@@ -262,13 +264,13 @@ class MainWindow(QMainWindow):
         # Due At
         due_at_layout = QHBoxLayout()
         self.due_at_label = QLabel(f"{UI_DUE_AT}:")
-        self.due_at_days = QLabel("42")
+        self.due_at_days = QLabel()
         self.due_at_days.setAlignment(Qt.AlignRight)
         due_at_layout.addWidget(self.due_at_label)
         due_at_layout.addWidget(self.due_at_days)
         self.due_at_input = QDateTimeEdit()
         self.due_at_input.setDateTime(next_working_midday())
-        self.due_at_input.setDisplayFormat("yyyy-MM-dd HH:mm:ss")
+        self.due_at_input.setDisplayFormat("yyyy-MM-dd HH:mm")
         self.due_at_input.setCalendarPopup(True)
         main_vertical_layout.addLayout(due_at_layout)
         main_vertical_layout.addWidget(self.due_at_input)
@@ -276,13 +278,13 @@ class MainWindow(QMainWindow):
         # Expected At
         expected_at_layout = QHBoxLayout()
         self.expected_at_label = QLabel(f"{UI_EXPECTED_AT}:")
-        self.expected_at_days = QLabel("56")
+        self.expected_at_days = QLabel()
         self.expected_at_days.setAlignment(Qt.AlignRight)
         expected_at_layout.addWidget(self.expected_at_label)
         expected_at_layout.addWidget(self.expected_at_days)
         self.expected_at_input = QDateTimeEdit()
         self.expected_at_input.setDateTime(next_working_midday())
-        self.expected_at_input.setDisplayFormat("yyyy-MM-dd HH:mm:ss")
+        self.expected_at_input.setDisplayFormat("yyyy-MM-dd HH:mm")
         self.expected_at_input.setCalendarPopup(True)
         main_vertical_layout.addLayout(expected_at_layout)
         main_vertical_layout.addWidget(self.expected_at_input)
@@ -300,6 +302,7 @@ class MainWindow(QMainWindow):
 
         # Reply input
         self.reply_input = QTextEdit()
+        self.reply_input.setPlaceholderText(UI_PLACEHOLDER_REPLY)
         self.reply_input.setReadOnly(True)
         main_vertical_layout.addWidget(self.reply_input)
 
@@ -343,12 +346,10 @@ class MainWindow(QMainWindow):
         user_menu.addAction(user_data_action)
             # Export Menu
         export_menu = menu_bar.addMenu(UI_EXPORT_MENU)
-                # Personal
-        personal_action = QAction(UI_PERSONAL_TASKS, self)
-        export_menu.addAction(personal_action)
                 # All
-        all_action = QAction(UI_ALL_TASKS, self)
-        export_menu.addAction(all_action)
+        export_all_action = QAction(UI_STARRED_BOX, self)
+        export_menu.addAction(export_all_action)
+        export_all_action.triggered.connect(lambda: export_report_view())
             # Info Menu
                 # About
         info_menu = menu_bar.addMenu(UI_INFO_MENU)
@@ -428,7 +429,6 @@ class MainWindow(QMainWindow):
             else:
                 self.send_button.setEnabled(False)
 
-
     def show_sender_receiver_info(self,sender_id, receiver_id, task_id=""):
         sender_first_name, sender_last_name = get_user_full_name(sender_id)
         self.sender_full_name.setText(f"{sender_first_name} {sender_last_name}")
@@ -451,35 +451,58 @@ class MainWindow(QMainWindow):
         item_index = self.table_view.selectionModel().currentIndex()
         id_col_index =  self.table_view.model().index(item_index.row(), 0)
         self.current_task_id = self.table_view.model().data(id_col_index, Qt.UserRole)
+
         task_details = get_task_details(self.current_task_id)
+        (task_id, sender_id, receiver_id, created_at, modified_at, title, body,
+         reference, due_at, starred, done, expected_at, reply, archived) = task_details
 
-        task_id = task_details[0]
         self.task_id_value.setText(str(task_id))
-        self.show_sender_receiver_info(task_id=task_id, sender_id=task_details[1], receiver_id=task_details[2])
-        self.created_at_value.setText(task_details[3])
-        self.modified_at_value.setText(task_details[4])
-        self.title_input.setText(task_details[5])
-        self.body_input.setText(task_details[6])
+        self.show_sender_receiver_info(task_id=task_id, sender_id=sender_id, receiver_id=receiver_id)
+        self.created_at_value.setText(created_at)
+        self.modified_at_value.setText(modified_at)
+        self.title_input.setText(title)
+        self.body_input.setText(body)
+        self.reference_label.setText(f'<a href={reference}>{UI_REFERENCE}:</a>')
+        self.reference_label.setToolTip(reference)
 
-        self.reference_label.setText(f'<a href={task_details[7]}>{UI_REFERENCE}:</a>')
-        self.reference_label.setToolTip(task_details[7])
+        days_to_due = count_days(deadline=due_at)
+        due_at = due_at[:16]
+        self.due_at_input.setDateTime(QDateTime.fromString(due_at,"yyyy-MM-dd HH:mm"))
 
-        self.due_at_input.setDateTime(QDateTime.fromString(task_details[8],"yyyy-MM-dd HH:mm:ss"))
-        if task_details[9]:
+        if starred:
             self.starred_checkbox.setChecked(True)
         else:
             self.starred_checkbox.setChecked(False)
-        if task_details[10]:
+        if done:
             self.done_checkbox.setChecked(True)
         else:
             self.done_checkbox.setChecked(False)
-        self.expected_at_input.setDateTime(QDateTime.fromString(task_details[11],"yyyy-MM-dd HH:mm:ss"))
-        self.reply_input.setText(task_details[12])
-        if task_details[13]:
+
+        days_to_expected = count_days(deadline=expected_at)
+        expected_at = expected_at[:16]
+        self.expected_at_input.setDateTime(QDateTime.fromString(expected_at,"yyyy-MM-dd HH:mm"))
+
+        self.reply_input.setText(reply)
+        if archived:
             self.archived_checkbox.setChecked(True)
         else:
             self.archived_checkbox.setChecked(False)
         self.send_button.setEnabled(False)
+
+        if self.done_checkbox.isChecked():
+            self.due_at_days.setText("")
+            self.expected_at_days.setText("")
+        else:
+            self.due_at_days.setText(f"{days_to_due} {UI_DAYS}")
+            if days_to_due < 0:
+                self.due_at_days.setStyleSheet("color: red;")
+            else:
+                self.due_at_days.setStyleSheet("color: black;")
+            self.expected_at_days.setText(f"{days_to_expected} {UI_DAYS}")
+            if days_to_expected < 0:
+                self.expected_at_days.setStyleSheet("color: red;")
+            else:
+                self.expected_at_days.setStyleSheet("color: black;")
 
     def on_tree_item_selected(self):
         """Handles selecting a user item in the TreeView."""
@@ -541,8 +564,8 @@ class MainWindow(QMainWindow):
             update_result = update_task(title=self.title_input.text().upper(),
                                         body=self.body_input.toPlainText(),
                                         reference=self.reference_label.toolTip(),
-                                        due_at=self.due_at_input.text(),
-                                        expected_at=self.expected_at_input.text(),
+                                        due_at=self.due_at_input.text() + ":00",
+                                        expected_at=self.expected_at_input.text() + ":00",
                                         starred=1 if self.starred_checkbox.isChecked() else 0,
                                         archived=1 if self.archived_checkbox.isChecked() else 0,
                                         reply=self.reply_input.toPlainText(),
@@ -550,6 +573,11 @@ class MainWindow(QMainWindow):
                                         task_id=self.current_task_id)
             if update_result:
                 self.status_bar.showMessage(f"{UI_TASK} {self.current_task_id} {UI_TASK_UPDATED}")
+                # Select a dummy index then the previously selected index of the TreeView to update the TableView
+                previous_index = self.tree_view.selectionModel().currentIndex()
+                dummy_index = self.tree_model.index(0, 0)
+                self.tree_view.setCurrentIndex(dummy_index)
+                self.tree_view.setCurrentIndex(previous_index)
             else:
                 self.send_button.setEnabled(True)
         else:
@@ -558,12 +586,13 @@ class MainWindow(QMainWindow):
                                    title=self.title_input.text().upper(),
                                    body=self.body_input.toPlainText(),
                                    reference=self.reference_label.toolTip(),
-                                   due_at=self.due_at_input.text(),
-                                   expected_at=self.expected_at_input.text(),
+                                   due_at=self.due_at_input.text() + ":00",
+                                   expected_at=self.expected_at_input.text() + ":00",
                                    starred=1 if self.starred_checkbox.isChecked() else 0,
                                    archived=1 if self.archived_checkbox.isChecked() else 0)
             if new_task_id:
                 self.status_bar.showMessage(f"{UI_TASK} {new_task_id} {UI_TASK_SENT}")
+                # Select the Outbox index of the TreeView to show the updated TableView
                 outbox_index = self.tree_model.index(1, 0, self.tree_model.index(0, 0))
                 self.tree_view.setCurrentIndex(outbox_index)
             else:
