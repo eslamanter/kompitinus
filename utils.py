@@ -1,9 +1,9 @@
 import json
 import os
 from PyQt5.QtWidgets import QMessageBox, QFileDialog
-from PyQt5.QtGui import QDesktopServices
-from PyQt5.QtCore import QUrl, QDateTime, QTime
-from constants import DEV_EMAIL, APP_NAME, APP_VERSION, MSG_SELECT_DIR, MSG_SELECT_FILE, CFG_FILE
+from PyQt5.QtGui import QDesktopServices, QIcon
+from PyQt5.QtCore import QUrl, QDateTime
+from constants import DEV_EMAIL, APP_NAME, APP_VERSION, MSG_SELECT_DIR, MSG_SELECT_FILE, CFG_FILE, MAIN_ICON
 import winsound
 import config
 
@@ -90,6 +90,7 @@ def playsound_ok():
 
 def show_question_msg(text, title=APP_NAME):
     msg_box = QMessageBox()
+    msg_box.setWindowIcon(QIcon(MAIN_ICON))
     msg_box.setWindowTitle(title)
     msg_box.setIcon(QMessageBox.Question)
     msg_box.setText(text)
@@ -100,6 +101,7 @@ def show_question_msg(text, title=APP_NAME):
 
 def show_info_msg(text, title=APP_NAME):
     msg_box = QMessageBox()
+    msg_box.setWindowIcon(QIcon(MAIN_ICON))
     msg_box.setWindowTitle(title)
     msg_box.setIcon(QMessageBox.Information)
     msg_box.setText(text)
@@ -109,6 +111,7 @@ def show_info_msg(text, title=APP_NAME):
 
 def show_warning_msg(text, title=APP_NAME):
     msg_box = QMessageBox()
+    msg_box.setWindowIcon(QIcon(MAIN_ICON))
     msg_box.setWindowTitle(title)
     msg_box.setIcon(QMessageBox.Warning)
     msg_box.setText(text)

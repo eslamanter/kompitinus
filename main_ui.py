@@ -3,8 +3,9 @@ from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QFrame, QTableView, QSplitter, QLineEdit,
     QTextEdit, QCheckBox, QPushButton, QDateTimeEdit, QTreeView, QStatusBar, QMenu, QAction, QToolButton,
     QHeaderView, QAbstractItemView)
-from PyQt5.QtGui import QStandardItemModel, QStandardItem, QCursor, QBrush, QColor, QTextCharFormat, QFont
+from PyQt5.QtGui import QStandardItemModel, QStandardItem, QCursor, QBrush, QColor, QTextCharFormat, QFont, QIcon
 from PyQt5.QtCore import Qt, QDateTime, QDate, QTime
+from holidays.countries import Italy
 from readme_ui import ReadmeViewer
 from about_ui import AboutScreen
 from constants import *
@@ -14,7 +15,6 @@ from user_ui import UserUpdate
 from utils import send_email, select_directory_dialog, get_directory, show_question_msg, count_days, playsound_ok
 from datetime import date
 import config
-import holidays
 
 
 class TaskTableModel(QStandardItemModel):
@@ -69,16 +69,16 @@ class TaskTableModel(QStandardItemModel):
                 item.setFont(task_font)
 
                 if archived:
-                    item.setBackground((QBrush(QColor(211, 211, 211))))  # Light grey
+                    item.setBackground((QBrush(QColor(*COLOR_LIGHT_GREY))))
                 elif done:
-                    item.setBackground((QBrush(QColor(173, 216, 230))))  # Light blue
+                    item.setBackground((QBrush(QColor(*COLOR_LIGHT_BLUE))))
                 elif expired:
                     if starred:
-                        item.setBackground((QBrush(QColor(255, 204, 203))))  # Light red
+                        item.setBackground((QBrush(QColor(*COLOR_LIGHT_RED))))
                     else:
-                        item.setBackground((QBrush(QColor(255, 200, 130))))  # Light orange
+                        item.setBackground((QBrush(QColor(*COLOR_LIGHT_ORANGE))))
                 else:
-                    item.setBackground((QBrush(QColor(144, 238, 144))))  # Light green
+                    item.setBackground((QBrush(QColor(*COLOR_LIGHT_GREEN))))
 
                 item.setFlags(item.flags() & ~Qt.ItemIsEditable)  # Disable editing
 
@@ -90,7 +90,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(APP_NAME)
-
+        self.setWindowIcon(QIcon(MAIN_ICON))
         central_widget = QWidget()
 
         self.tree_view = QTreeView(self)
@@ -400,7 +400,7 @@ class MainWindow(QMainWindow):
                        self.receiver_email, self.due_at_days, self.expected_at_days]
         self.text_inputs = [self.title_input, self.body_input, self.reply_input]
         self.date_time_inputs = [self.due_at_input, self.expected_at_input] # Not to clear but to show following midday
-        self.clearable_elements = self.labels + self.text_inputs # To clear by setting text as ""
+        self.clearable_elements = self.labels + self.text_inputs # UI elements to clear by setting text as ""
         self.resettable_checkboxes = [self.starred_checkbox, self.archived_checkbox, self.done_checkbox] # To reset by unchecking
 
         # Placeholders
@@ -414,7 +414,7 @@ class MainWindow(QMainWindow):
 
         # Setup calendars to highlight Italy holidays in red
         current_year = QDate.currentDate().year()
-        self.italy_holidays = holidays.Italy(years=[current_year, current_year + 1])
+        self.italy_holidays = Italy(years=[current_year, current_year + 1])
         self.setup_calendars()
 
         # Connect input changes to send button enabling/update days to deadline
@@ -434,7 +434,7 @@ class MainWindow(QMainWindow):
         # Convert QDate to Python date
         py_date = date(qdate.year(), qdate.month(), qdate.day())
         # Check if it's a holiday or weekend
-        return py_date in self.italy_holidays or qdate.dayOfWeek() in [6, 7]  # Saturday = 6, Sunday = 7
+        return py_date in self.italy_holidays or qdate.dayOfWeek() in WEEKENDS
 
     def set_deadlines_next_working_midday(self):
         """Set deadlines date-time as next working midday."""
@@ -735,6 +735,8 @@ class MainWindow(QMainWindow):
         self.set_deadlines_next_working_midday()
         for element in self.clearable_elements:
             element.setText("")
+        self.reference_label.setText(f"{UI_REFERENCE}:")
+        self.reference_label.setToolTip("")
         for checkbox in self.resettable_checkboxes:
             checkbox.setChecked(False)
         self.enable_task_details(False)
@@ -765,7 +767,7 @@ class MainWindow(QMainWindow):
 
     def delete_reference_link(self):
         deleted_text = self.reference_label.toolTip()
-        self.reference_label.setText(F"{UI_REFERENCE}:")
+        self.reference_label.setText(f"{UI_REFERENCE}:")
         self.reference_label.setToolTip("")
         if deleted_text:
             self.status_bar.showMessage(f"{UI_DELETED}: {deleted_text}")

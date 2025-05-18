@@ -9,27 +9,40 @@ APP_VERSION = '1.0'
 APP_PHASE = 'Beta'
 APP_YEAR = '2025'
 
-# ---------- App About/Copyright/Disclaimer (Italian) ----------
-APP_ABOUT = "Un'applicazione per gestire, scambiare e analizzare i compiti di lavoro."
-APP_COPYRIGHT = (f"© {APP_YEAR} {DEV_NAME}. Tutti i diritti riservati.\n"
-                 "È vietata la distribuzione o l'utilizzo non autorizzato.")
-APP_DISCLAIMER = (f"ESCLUSIONE DI RESPONSABILITÀ:\n"
-                  "Questo software è distribuito senza alcuna garanzia di prestazioni o risultati.")
+# ---------------------------------------- App About/Copyright/Disclaimer (ITA) ----------------------------------------
+APP_ABOUT = """
+Questa applicazione crea e gestisce un database condiviso, offrendo un'interfaccia per organizzare,
+analizzare e condividere i compiti lavorativi con trasparenza, nel rispetto delle regole aziendali.
+Permette di impostare priorità con scadenze flessibili, indicando i giorni mancanti o scaduti.
+Gli utenti possono consultare il titolo e la scadenza dei compiti assegnati agli altri,
+consentendo anche di esportare report riepilogativi dei compiti contrassegnati.<br>
+Per maggiori informazioni, consultare Info > Guida.
+"""
 
-# Company working hours
+APP_DISCLAIMER = """
+ESCLUSIONE DI RESPONSABILITÀ:<br>
+Questo software gestisce un database aperto, esponendolo al rischio di modifiche esterne o danneggiamenti.
+Si consiglia di non condividere informazioni sensibili o riservate.
+Questo software è fornito senza alcuna garanzia di prestazioni, affidabilità o risultati."""
+
+APP_COPYRIGHT = (f"© {APP_YEAR} {DEV_NAME}. Tutti i diritti riservati.<br>"
+                 "È vietata la distribuzione o l'utilizzo non autorizzato.")
+# ----------------------------------------------------------------------------------------------------------------------
+
+# Company policy
+WEEKENDS = [6, 7] # Saturday = 6, Sunday = 7
 WORKING_HOURS = (9, 18) # 09:00 - 18:59
 
 # Config
 CFG_FILE = "config.json"
-    # Json Config File
 CFG_PATH = "path"
 CFG_EMAIL = "email"
 CFG_PIN = "pin"
 
-# Database
+# SQLite Database
 DB_NAME = f"{APP_NAME.lower()}.db"
 
-    # Users
+    # Users Table
 DB_USERS_TABLE = "users"
 DB_USER_ID = "user_id"
 DB_FIRST_NAME = "first_name"
@@ -41,7 +54,7 @@ DB_REGISTERED_AT = "registered_at"
 DB_ACTIVE = "active"
 DB_USERS_ID_BASE = 100
 
-    # Tasks
+    # Tasks Table
 DB_TASKS_TABLE = "tasks"
 DB_TASK_ID  = "task_id"
 DB_SENDER_ID = "sender_id"
@@ -59,10 +72,11 @@ DB_REPLY = "reply"
 DB_ARCHIVED = "archived"
 DB_TASKS_ID_BASE = 100000
 
-    # Report
+    # Report View
 DB_REPORT_VIEW = "report"
 
-# ---------- UI Text (Italian) ----------
+# --------------------------------------------- Localized UI Strings (ITA) ---------------------------------------------
+
     # Menubar
         # User Menu
 UI_USER_MENU = "Utente"
@@ -157,20 +171,33 @@ UI_LOGOUT = "Esci"
 
     # About
 UI_CLOSE = "Chiudi"
+UI_README_TITLE = "Readme ITA"
 
 # Messages
 MSG_SELECT_DIR = "Seleziona Cartella"
 MSG_SELECT_FILE = "Seleziona File"
 
-MSG_DB_INACCESSIBLE = f"Database inaccessibile!"
+MSG_DB_UNREACHABLE = "Database irraggiungibile!"
 MSG_EMAIL_EXISTS = "Utente già registrato."
 MSG_EXCEL_OPENED = "Foglio Excel in uso."
 MSG_LOGOUT = "Sei sicure di voler uscire?"
 MSG_CLOSE = "Sei sicuro di voler chiudere?"
 
-# Help
+# ----------------------------------------------------------------------------------------------------------------------
+
+# URLs
 README_URL = f"https://raw.githubusercontent.com/eslamanter/kompitinus-ita/main/README.md"
 
 # Errors
 ERR_GUI = "GUI ERROR"
 ERR_DB = "DB ERROR"
+
+# Icons
+MAIN_ICON = "icon.png"
+
+# Color Palette
+COLOR_LIGHT_GREY = (211, 211, 211)
+COLOR_LIGHT_BLUE = (173, 216, 230)
+COLOR_LIGHT_RED = (255, 204, 203)
+COLOR_LIGHT_ORANGE = (255, 200, 130)
+COLOR_LIGHT_GREEN = (144, 238, 144)

@@ -1,12 +1,12 @@
 import sys
-from PyQt5.QtGui import QCursor, QIntValidator
+from PyQt5.QtGui import QCursor, QIntValidator, QIcon
 from PyQt5.QtWidgets import (QApplication, QDialog, QLineEdit, QPushButton, QVBoxLayout, QLabel, QGroupBox, QFrame,
                              QHBoxLayout)
 from PyQt5.QtCore import Qt
 import config
 from constants import (APP_NAME, UI_EMAIL, UI_PIN, UI_FIRST_NAME, UI_LAST_NAME, UI_UPDATE, UI_4_DIGITS, UI_SIGNUP,
                        UI_LOGOUT, UI_LOGIN, MSG_EMAIL_EXISTS, CFG_EMAIL, CFG_PIN, CFG_PATH, MSG_LOGOUT, UI_NEW_USER,
-                       UI_REGISTERED, UI_COMPANY, UI_USER_DATA)
+                       UI_REGISTERED, UI_COMPANY, UI_USER_DATA, MAIN_ICON)
 from sqlite_db import email_exists, check_login, add_new_user, update_user_data, get_user_full_name
 from utils import show_info_msg, write_config, show_question_msg, valid_email, valid_pin, playsound_hand
 
@@ -16,6 +16,7 @@ class UserDialog(QDialog):
         super().__init__()
 
         self.setWindowTitle(APP_NAME)
+        self.setWindowIcon(QIcon(MAIN_ICON))
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self.setModal(True)
 
@@ -232,6 +233,7 @@ class UserLogin(QDialog):
         super().__init__()
 
         self.setWindowTitle(APP_NAME)
+        self.setWindowIcon(QIcon(MAIN_ICON))
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self.setModal(True)
 

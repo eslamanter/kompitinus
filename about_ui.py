@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QApplication, QLabel, QVBoxLayout, QWidget, QPushButton
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QCursor
+from PyQt5.QtGui import QCursor, QIcon
 import sys
 from constants import APP_NAME, APP_VERSION, APP_PHASE, APP_ABOUT, APP_DISCLAIMER, APP_COPYRIGHT, DEV_EMAIL, UI_CLOSE
 from utils import send_email
@@ -9,13 +9,12 @@ from utils import send_email
 class AboutScreen(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle('Info')
         self.setWindowFlags(Qt.SplashScreen | Qt.FramelessWindowHint)
 
         title_label = QLabel(f'\n{APP_NAME.upper()}\nV.{APP_VERSION} {APP_PHASE}\n', self)
         title_label.setAlignment(Qt.AlignCenter)
 
-        body_label = QLabel(f'\n{APP_ABOUT}\n\n{APP_DISCLAIMER}\n\n{APP_COPYRIGHT}\n', self)
+        body_label = QLabel(f'<p align="justify">{APP_ABOUT}<br><br>{APP_DISCLAIMER}<br><br>{APP_COPYRIGHT}', self)
         body_label.setWordWrap(True)
 
         email_label = QLabel(f'<a href="#">{DEV_EMAIL}</a>')

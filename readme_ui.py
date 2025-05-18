@@ -1,14 +1,17 @@
 import sys
 import requests
+from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from markdown import markdown
-from constants import APP_NAME, README_URL
+from constants import APP_NAME, UI_README_TITLE, README_URL, MAIN_ICON
+
 
 class ReadmeViewer(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(f"{APP_NAME} Readme")
+        self.setWindowTitle(f"{APP_NAME} {UI_README_TITLE}")
+        self.setWindowIcon(QIcon(MAIN_ICON))
 
         # Create a central widget and layout
         central_widget = QWidget()

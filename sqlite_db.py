@@ -13,13 +13,13 @@ from constants import (DB_USERS_ID_BASE, DB_USERS_TABLE, DB_USER_ID,
                        DB_TITLE, DB_BODY, DB_REFERENCE, DB_DUE_AT, DB_STARRED, DB_DONE, DB_EXPECTED_AT, DB_REPLY,
                        DB_ARCHIVED, CFG_PATH, DB_SEEN_AT, UI_INBOX, UI_OUTBOX, UI_EXPIRED_BOX, UI_STARRED_BOX,
                        UI_TASK_ID, UI_MODIFIED_AT, UI_SENDER, UI_RECEIVER, UI_TASK, UI_DUE_AT, DB_REPORT_VIEW, UI_DELAY,
-                       UI_DONE, MSG_EXCEL_OPENED, MSG_DB_INACCESSIBLE, ERR_DB)
+                       UI_DONE, MSG_EXCEL_OPENED, MSG_DB_UNREACHABLE, ERR_DB)
 
 
 def export_report_view():
     """Exports DB report view into a new Excel worksheet of a new or an existing workbook in the local directory."""
     if not exists(config.config[CFG_PATH]):
-        show_warning_msg(MSG_DB_INACCESSIBLE)
+        show_warning_msg(MSG_DB_UNREACHABLE)
     else:
         try:
             # Connect to the database
@@ -91,7 +91,7 @@ def export_report_view():
 def get_task_details(task_id):
     """Retrieves all task details given the task ID."""
     if not exists(config.config[CFG_PATH]):
-        show_warning_msg(MSG_DB_INACCESSIBLE)
+        show_warning_msg(MSG_DB_UNREACHABLE)
     else:
         try:
             # Connect to DB
@@ -116,7 +116,7 @@ def get_task_details(task_id):
 def get_tasks_by_user(user_id, box_type, filter_type=None):
     """Retrieves all tasks of a user given their ID, box type, and optionally box filter."""
     if not exists(config.config[CFG_PATH]):
-        show_warning_msg(MSG_DB_INACCESSIBLE)
+        show_warning_msg(MSG_DB_UNREACHABLE)
     else:
         sql_conditions = ""
         params = []
@@ -189,7 +189,7 @@ def get_tasks_by_user(user_id, box_type, filter_type=None):
 def add_task(sender_id, receiver_id, title, body, reference, due_at, expected_at, starred, archived, reply="", done=0):
     """Adds new task to DB given all task details and returns its ID."""
     if not exists(config.config[CFG_PATH]):
-        show_warning_msg(MSG_DB_INACCESSIBLE)
+        show_warning_msg(MSG_DB_UNREACHABLE)
     else:
         try:
             # Connect to DB
@@ -217,7 +217,7 @@ def add_task(sender_id, receiver_id, title, body, reference, due_at, expected_at
 def update_task(title, body, reference, due_at, expected_at, starred, archived, reply, done, task_id):
     """Updates an existing task given its ID and details."""
     if not exists(config.config[CFG_PATH]):
-        show_warning_msg(MSG_DB_INACCESSIBLE)
+        show_warning_msg(MSG_DB_UNREACHABLE)
     else:
         try:
             # Connect to DB
@@ -247,7 +247,7 @@ def update_task(title, body, reference, due_at, expected_at, starred, archived, 
 def get_all_users():
     """Retrieves firstname, lastname, and email of all active users."""
     if not exists(config.config[CFG_PATH]):
-        show_warning_msg(MSG_DB_INACCESSIBLE)
+        show_warning_msg(MSG_DB_UNREACHABLE)
     else:
         try:
             # Connect to DB
@@ -271,7 +271,7 @@ def get_all_users():
 def email_exists(email):
     """Checks if given email exists."""
     if not exists(config.config[CFG_PATH]):
-        show_warning_msg(MSG_DB_INACCESSIBLE)
+        show_warning_msg(MSG_DB_UNREACHABLE)
     else:
         try:
             # Connect to DB
@@ -294,7 +294,7 @@ def email_exists(email):
 def get_my_seen_at():
     """Retrieves local user last seen at."""
     if not exists(config.config[CFG_PATH]):
-        show_warning_msg(MSG_DB_INACCESSIBLE)
+        show_warning_msg(MSG_DB_UNREACHABLE)
     else:
         try:
             # Connect to the database
@@ -315,7 +315,7 @@ def get_my_seen_at():
 def get_user_email(user_id):
     """Retrieves email for a given user ID."""
     if not exists(config.config[CFG_PATH]):
-        show_warning_msg(MSG_DB_INACCESSIBLE)
+        show_warning_msg(MSG_DB_UNREACHABLE)
     else:
         try:
             # Connect to the database
@@ -346,7 +346,7 @@ def get_user_email(user_id):
 def get_user_full_name(user_id):
     """Retrieves firstname and lastname for a given user ID."""
     if not exists(config.config[CFG_PATH]):
-        show_warning_msg(MSG_DB_INACCESSIBLE)
+        show_warning_msg(MSG_DB_UNREACHABLE)
     else:
         try:
             # Connect to the database
@@ -377,7 +377,7 @@ def get_user_full_name(user_id):
 def add_new_user(first_name, last_name, email, pin):
     """Adds new user given firstname, lastname, email, and pin and assigns ID to config.my_id."""
     if not exists(config.config[CFG_PATH]):
-        show_warning_msg(MSG_DB_INACCESSIBLE)
+        show_warning_msg(MSG_DB_UNREACHABLE)
     else:
         try:
             # Connect to DB
@@ -410,7 +410,7 @@ def add_new_user(first_name, last_name, email, pin):
 def update_my_seen_at():
     """Updates local user last seen at."""
     if not exists(config.config[CFG_PATH]):
-        show_warning_msg(MSG_DB_INACCESSIBLE)
+        show_warning_msg(MSG_DB_UNREACHABLE)
     else:
         try:
             # Connect to DB
@@ -434,7 +434,7 @@ def update_my_seen_at():
 def update_user_data(first_name, last_name, email, pin):
     """Updates user data given new: firstname, lastname, email, and pin."""
     if not exists(config.config[CFG_PATH]):
-        show_warning_msg(MSG_DB_INACCESSIBLE)
+        show_warning_msg(MSG_DB_UNREACHABLE)
     else:
         try:
             # Connect to DB
@@ -462,7 +462,7 @@ def update_user_data(first_name, last_name, email, pin):
 def check_login(email, pin):
     """Verifies login by checking email-based user ID and hashed pin."""
     if not exists(config.config[CFG_PATH]):  # Ensure database exists
-        show_warning_msg(MSG_DB_INACCESSIBLE)
+        show_warning_msg(MSG_DB_UNREACHABLE)
     else:
         try:
             # Connect to main DB
