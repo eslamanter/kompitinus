@@ -1,10 +1,11 @@
 import sys
 import requests
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QMenu
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from markdown import markdown
 from constants import APP_NAME, UI_README_TITLE, README_URL, MAIN_ICON
+from PyQt5.QtCore import Qt
 
 
 class ReadmeViewer(QMainWindow):
@@ -27,6 +28,8 @@ class ReadmeViewer(QMainWindow):
         # Set the central widget
         central_widget.setLayout(layout)
         self.setCentralWidget(central_widget)
+
+        self.web_view.setContextMenuPolicy(Qt.NoContextMenu) # Disable context menu
 
     def fetch_and_display_readme(self):
         try:
@@ -71,6 +74,7 @@ class ReadmeViewer(QMainWindow):
         except Exception as e:
             error_message = f"<html><body><h1>Failed to load README.md</h1><p>{e}</p></body></html>"
             self.web_view.setHtml(error_message)
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

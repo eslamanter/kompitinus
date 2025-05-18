@@ -11,11 +11,11 @@ APP_YEAR = '2025'
 
 # ---------------------------------------- App About/Copyright/Disclaimer (ITA) ----------------------------------------
 APP_ABOUT = """
-Questa applicazione crea e gestisce un database condiviso, offrendo un'interfaccia per organizzare,
+Questa applicazione crea e gestisce un database locale condiviso, offrendo un'interfaccia per organizzare,
 analizzare e condividere i compiti lavorativi con trasparenza, nel rispetto delle regole aziendali.
 Permette di impostare priorità con scadenze flessibili, indicando i giorni mancanti o scaduti.
-Gli utenti possono consultare il titolo e la scadenza dei compiti assegnati agli altri,
-consentendo anche di esportare report riepilogativi dei compiti contrassegnati.<br>
+Gli utenti autenticati possono consultare il titolo e la scadenza dei compiti assegnati agli altri,
+con la possibilità di esportare report riepilogativi dei compiti contrassegnati.<br>
 Per maggiori informazioni, consultare Info > Guida.
 """
 
@@ -112,11 +112,11 @@ UI_MAX_TITLE_LEN = 160
 UI_STARRED = "Contrassegnato"
 UI_STARRED_TIP = "Contrassegnare per permettere agli altri di consultare il titolo e la scadenza"
 UI_ARCHIVED = "Archiviato"
-UI_ARCHIVED_TIP = "Archiviare per nascondere agli altri, incluso il destinatario"
+UI_ARCHIVED_TIP = "Archiviare per nascondere agli altri, incluso l'utente incaricato del compito"
 
-UI_PLACEHOLDER_TITLE = "Titolo (Max 160 Caratteri)"
+UI_PLACEHOLDER_TITLE = f"Titolo (Max {UI_MAX_TITLE_LEN} caratteri)"
 UI_PLACEHOLDER_BODY = "Descrizione"
-UI_PLACEHOLDER_REPLY = "Risposta del responsabile"
+UI_PLACEHOLDER_REPLY = "Risposta dell'utente incaricato del compito"
 
 UI_REFERENCE = "Riferimento"
 UI_REFERENCE_OPEN = "Seleziona cartella"
@@ -125,9 +125,9 @@ UI_REFERENCE_PASTE = "Incolla Link"
 UI_REFERENCE_DELETE = "Cancella Link"
 
 UI_DUE_AT = "Scade il"
-UI_DUE_AT_TIP = "Data teorica di scadenza per il completamento"
+UI_DUE_AT_TIP = "Data di scadenza prevista dal responsabile per il completamento del compito"
 UI_EXPECTED_AT = "Previsto il"
-UI_EXPECTED_AT_TIP = "Data prevista dal responsabile per il completamento"
+UI_EXPECTED_AT_TIP = "Data di completamento prevista dall'utente incaricato del compito"
 UI_DAYS = "gg"
 UI_HOLIDAY = "Giorno non lavorativo!"
 UI_OUTSIDE_HOURS = "Fuori orari lavorativi!"
