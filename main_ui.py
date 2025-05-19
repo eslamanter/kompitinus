@@ -51,6 +51,7 @@ class TaskTableModel(QStandardItemModel):
 
             notes = ""
             if done or archived:
+                notes += f"- {UI_STARRED}\n" if starred else ""
                 notes += f"- {UI_DONE}\n" if done else ""
                 notes += f"- {UI_ARCHIVED}\n" if archived else ""
             else:
@@ -162,8 +163,6 @@ class MainWindow(QMainWindow):
         self.left_splitter = QSplitter(Qt.Horizontal)
         self.left_splitter.addWidget(self.tree_view)
         self.left_splitter.addWidget(self.table_view)
-        self.left_splitter.setStretchFactor(0, 1)
-        self.left_splitter.setStretchFactor(1, 3)
 
         # Left column: Task ID, Created At, Modified At
         left_meta_layout = QVBoxLayout()
@@ -343,8 +342,6 @@ class MainWindow(QMainWindow):
         self.right_splitter = QSplitter(Qt.Horizontal)
         self.right_splitter.addWidget(self.left_splitter)
         self.right_splitter.addWidget(self.task_details_widget)
-        self.right_splitter.setStretchFactor(0, 2)
-        self.right_splitter.setStretchFactor(1, 1)
 
         # Set the splitter as the main layout
         central_layout = QVBoxLayout(central_widget)
@@ -380,7 +377,10 @@ class MainWindow(QMainWindow):
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
 
+        # Main window sizing and positioning
         self.adjustSize()
+        self.left_splitter.setSizes([self.left_splitter.width(), 0])
+        self.right_splitter.setSizes([self.right_splitter.width(), 0])
         self.center()
 
         # Lists of task UI elements to be disabled for inbox, outbox and send modes
@@ -427,8 +427,24 @@ class MainWindow(QMainWindow):
             checkbox.stateChanged.connect(self.check_send_button)
         self.done_checkbox.stateChanged.connect(self.update_due_expected_days)
 
-        self.set_deadlines_next_working_midday() # Initially set deadlines to next working midday
-        self.set_clear_mode()  # Initially clear task details panel
+        self.set_deadlines_next_working_midday() # Set deadlines to next working midday as app starts
+        self.set_clear_mode()  # Clear task details panel as app starts
+
+    def extend_left_splitter(self, extend=True):
+        width =  self.left_splitter.width()
+        if extend:
+            if not self.left_splitter.sizes()[1]:
+                self.left_splitter.setSizes([int(width * 0.3), int(width * 0.7)])
+        else:
+            self.left_splitter.setSizes([width, 0])
+
+    def extend_right_splitter(self, extend=True):
+        width = self.right_splitter.width()
+        if extend:
+            if not self.right_splitter.sizes()[1]:
+                self.right_splitter.setSizes([int(width * 0.7), int(width * 0.3)])
+        else:
+            self.right_splitter.setSizes([width, 0])
 
     def is_special_date(self, qdate):
         # Convert QDate to Python date
@@ -596,6 +612,7 @@ class MainWindow(QMainWindow):
         self.send_button.setEnabled(False)
         self.update_due_expected_days()
         self.highlight_selected_deadlines()
+        self.extend_right_splitter()
 
     def on_tree_item_selected(self):
         """Handles selecting a user item in the TreeView."""
@@ -606,11 +623,13 @@ class MainWindow(QMainWindow):
         filter_type = index.data(self.FILTER_ROLE) # Starred/Expired filter selection
 
         self.set_clear_mode()  # Clear task details panel
+        self.extend_right_splitter(False)
 
         if user_id:
             tasks = get_tasks_by_user(user_id=user_id, box_type=UI_INBOX)
             model = TaskTableModel(tasks)
             self.table_view.setModel(model)
+            self.extend_left_splitter()
         elif box_type:
             if box_type == UI_INBOX:
                 self.set_inbox_mode()
@@ -620,6 +639,7 @@ class MainWindow(QMainWindow):
             model = TaskTableModel(tasks)
             self.table_view.setModel(model)
             self.table_view.selectionModel().selectionChanged.connect(self.on_table_row_selected)
+            self.extend_left_splitter()
         elif filter_type:
             parent_index = index.parent()
             box_type = parent_index.data(self.BOX_ROLE)
@@ -631,9 +651,11 @@ class MainWindow(QMainWindow):
             model = TaskTableModel(tasks)
             self.table_view.setModel(model)
             self.table_view.selectionModel().selectionChanged.connect(self.on_table_row_selected)
+            self.extend_left_splitter()
         else:
             model = TaskTableModel([])
             self.table_view.setModel(model)
+            self.extend_left_splitter(False)
 
         self.adjust_tableview()
 
