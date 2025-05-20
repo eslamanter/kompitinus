@@ -117,3 +117,7 @@ def show_warning_msg(text, title=APP_NAME):
     msg_box.setText(text)
     msg_box.setStandardButtons(QMessageBox.Ok)
     msg_box.exec()
+
+
+def dummy_function():
+    pass

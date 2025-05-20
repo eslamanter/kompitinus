@@ -12,7 +12,8 @@ from constants import *
 from sqlite_db import (get_all_users, add_task, update_task, get_tasks_by_user, get_task_details, get_user_full_name,
                        get_user_email, export_report_view, get_my_seen_at, update_my_seen_at)
 from user_ui import UserUpdate
-from utils import send_email, select_directory_dialog, get_directory, show_question_msg, count_days, playsound_ok
+from utils import (send_email, select_directory_dialog, get_directory, show_question_msg, count_days, playsound_ok,
+                   dummy_function)
 from datetime import date
 import config
 
@@ -408,6 +409,10 @@ class MainWindow(QMainWindow):
         self.readme_ui = None
         self.update_ui = None
 
+        # mailto signal flags
+        self.sender_email_connected = False
+        self.receiver_email_connected = False
+
         # Attributes
         self.current_task_id = None # Stores current task ID. Stores None if no task selected or upon sending a new task
         self.new_receiver_id = None # Stores new task receiver user ID. Stores None if task exists
@@ -568,16 +573,18 @@ class MainWindow(QMainWindow):
         sender_email = get_user_email(sender_id)
         self.sender_email.setText(f'<a href="#">{sender_email}</a>')
         self.sender_email.setToolTip(f"{UI_SEND_EMAIL_TO} {sender_email}")
-        self.sender_email.linkActivated.connect(
-            lambda: send_email(email=sender_email, title=f"{UI_TASK} {task_id}"))
+        self.sender_email.linkActivated.connect(lambda: dummy_function())
+        self.sender_email.linkActivated.disconnect()
+        self.sender_email.linkActivated.connect(lambda: send_email(email=sender_email, title=f"{UI_TASK} {task_id}"))
 
         receiver_first_name, receiver_last_name = get_user_full_name(receiver_id)
         self.receiver_full_name.setText(f"{receiver_first_name} {receiver_last_name}")
         receiver_email = get_user_email(receiver_id)
         self.receiver_email.setText(f'<a href="#">{receiver_email}</a>')
         self.receiver_email.setToolTip(f"{UI_SEND_EMAIL_TO} {receiver_email}")
-        self.receiver_email.linkActivated.connect(
-            lambda: send_email(email=receiver_email, title=f"{UI_TASK} {task_id}"))
+        self.receiver_email.linkActivated.connect(lambda: dummy_function())
+        self.receiver_email.linkActivated.disconnect()
+        self.receiver_email.linkActivated.connect(lambda: send_email(email=receiver_email, title=f"{UI_TASK} {task_id}"))
 
     def on_table_row_selected(self):
         """Retrieve task ID from the selected row and fill task details panel."""
