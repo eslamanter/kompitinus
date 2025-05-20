@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import (
     QTextEdit, QCheckBox, QPushButton, QDateTimeEdit, QTreeView, QStatusBar, QMenu, QAction, QToolButton,
     QHeaderView, QAbstractItemView)
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QCursor, QBrush, QColor, QTextCharFormat, QFont, QIcon
-from PyQt5.QtCore import Qt, QDateTime, QDate, QTime
+from PyQt5.QtCore import Qt, QDateTime, QDate, QTime, QUrl
 from holidays.countries import Italy
 from readme_ui import ReadmeViewer
 from about_ui import AboutScreen
@@ -111,8 +111,8 @@ class MainWindow(QMainWindow):
             return item
 
         # Create Parent Items
-        my_boxes_items = QStandardItem(config.config[CFG_EMAIL])
-        all_users_items = QStandardItem(UI_ALL_USERS)
+        self.my_boxes_items = QStandardItem(config.config[CFG_EMAIL])
+        self.all_users_items = QStandardItem(UI_ALL_USERS)
 
         # Create child items for my_boxes_items
         inbox_item = QStandardItem(UI_INBOX)
@@ -126,34 +126,23 @@ class MainWindow(QMainWindow):
             box.appendRow((create_sub_items(UI_STARRED_BOX)))
             box.appendRow((create_sub_items(UI_EXPIRED_BOX)))
 
-        my_boxes_items.appendRow(inbox_item)
-        my_boxes_items.appendRow(outbox_item)
+        self.my_boxes_items.appendRow(inbox_item)
+        self.my_boxes_items.appendRow(outbox_item)
 
-        # Get all users form DB & populate users full names under all_users_items
-        users = get_all_users()
-
-        for user in users:
-            user_id, first_name, last_name, email = user
-            user_item = QStandardItem(f"{last_name} {first_name}")
-            user_item.setData(user_id, self.USER_ROLE)
-            user_item.setData(email, Qt.ToolTipRole)
-            all_users_items.appendRow(user_item)
+        self.update_treeview() # Update user email on the top of the treeview and the users items under all users
 
         self.tree_view.selectionModel().selectionChanged.connect(self.on_tree_item_selected)
 
         # Add Both Parent Items to the Tree Root
         root_item = self.tree_model.invisibleRootItem()
-        root_item.appendRow(my_boxes_items)
-        root_item.appendRow(all_users_items)
+        root_item.appendRow(self.my_boxes_items)
+        root_item.appendRow(self.all_users_items)
 
-        # Expand all treeview
-        self.tree_view.expandAll()
+        self.set_treeview_readonly() # Disable modification for all parent and child items of the treeview
+        self.tree_view.expandAll() # Expand all treeview
 
         # Add send task to treeview user by double-click
         self.tree_view.doubleClicked.connect(self.on_item_double_clicked)
-
-        # Disable treeview modification
-        self.set_treeview_readonly()
 
         # Create table view
         self.table_view = QTableView()
@@ -355,7 +344,7 @@ class MainWindow(QMainWindow):
             # User Menu
         user_menu = menu_bar.addMenu(UI_USER_MENU)
         user_data_action = QAction(UI_USER_DATA, self)
-        user_data_action.triggered.connect(self.show_user)
+        user_data_action.triggered.connect(self.show_user_profile)
         user_menu.addAction(user_data_action)
             # Export Menu
         export_menu = menu_bar.addMenu(UI_EXPORT_MENU)
@@ -511,7 +500,7 @@ class MainWindow(QMainWindow):
         due_at_calendar = self.due_at_input.calendarWidget()
         expected_at_calendar = self.expected_at_input.calendarWidget()
 
-        # Format for holidays (red text)
+        # Format for holidays and non-working hours (red text)
         holiday_format = QTextCharFormat()
         holiday_format.setForeground(QColor("red"))
 
@@ -567,7 +556,7 @@ class MainWindow(QMainWindow):
             else:
                 self.send_button.setEnabled(False)
 
-    def show_sender_receiver_info(self,sender_id, receiver_id, task_id=""):
+    def show_sender_receiver_info(self, sender_id, receiver_id, task_title=""):
         sender_first_name, sender_last_name = get_user_full_name(sender_id)
         self.sender_full_name.setText(f"{sender_first_name} {sender_last_name}")
         sender_email = get_user_email(sender_id)
@@ -575,7 +564,7 @@ class MainWindow(QMainWindow):
         self.sender_email.setToolTip(f"{UI_SEND_EMAIL_TO} {sender_email}")
         self.sender_email.linkActivated.connect(lambda: dummy_function())
         self.sender_email.linkActivated.disconnect()
-        self.sender_email.linkActivated.connect(lambda: send_email(email=sender_email, title=f"{UI_TASK} {task_id}"))
+        self.sender_email.linkActivated.connect(lambda: send_email(email=sender_email, title=task_title))
 
         receiver_first_name, receiver_last_name = get_user_full_name(receiver_id)
         self.receiver_full_name.setText(f"{receiver_first_name} {receiver_last_name}")
@@ -584,7 +573,7 @@ class MainWindow(QMainWindow):
         self.receiver_email.setToolTip(f"{UI_SEND_EMAIL_TO} {receiver_email}")
         self.receiver_email.linkActivated.connect(lambda: dummy_function())
         self.receiver_email.linkActivated.disconnect()
-        self.receiver_email.linkActivated.connect(lambda: send_email(email=receiver_email, title=f"{UI_TASK} {task_id}"))
+        self.receiver_email.linkActivated.connect(lambda: send_email(email=receiver_email, title=task_title))
 
     def on_table_row_selected(self):
         """Retrieve task ID from the selected row and fill task details panel."""
@@ -597,7 +586,7 @@ class MainWindow(QMainWindow):
          reference, due_at, starred, done, expected_at, reply, archived) = task_details
 
         self.task_id_value.setText(str(task_id))
-        self.show_sender_receiver_info(task_id=task_id, sender_id=sender_id, receiver_id=receiver_id)
+        self.show_sender_receiver_info(sender_id=sender_id, receiver_id=receiver_id, task_title=title)
 
         self.created_at_value.setText(created_at)
         self.modified_at_value.setText(modified_at)
@@ -663,8 +652,30 @@ class MainWindow(QMainWindow):
             model = TaskTableModel([])
             self.table_view.setModel(model)
             self.extend_left_splitter(False)
+            self.update_treeview()
 
         self.adjust_tableview()
+
+    def update_treeview(self):
+        # Update user email in case of an update during app run
+        self.my_boxes_items.setText(config.config[CFG_EMAIL])
+
+        # Clear all possible existing rows in users item
+        self.all_users_items.removeRows(0, self.all_users_items.rowCount())
+
+        # Fetch updated user list from DB
+        users = get_all_users()
+
+        # Populate the tree with new user data
+        for user in users:
+            user_id, first_name, last_name, email = user
+            user_item = QStandardItem(f"{last_name} {first_name}")
+            user_item.setData(user_id, self.USER_ROLE)
+            user_item.setData(email, Qt.ToolTipRole)
+            self.all_users_items.appendRow(user_item)
+
+        # Disable treeview modification
+        self.set_treeview_readonly()
 
     def adjust_tableview(self):
         self.table_view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)  # Default sizing
@@ -677,10 +688,11 @@ class MainWindow(QMainWindow):
         user_id = index.data(self.USER_ROLE)
         if user_id:
             self.new_receiver_id = user_id
-            self.show_sender_receiver_info(config.my_id, self.new_receiver_id)
+            self.show_sender_receiver_info(sender_id=config.my_id, receiver_id=self.new_receiver_id)
             self.update_due_expected_days()
             self.highlight_selected_deadlines()
             self.set_send_mode()
+            self.extend_right_splitter()
 
     def send_task(self):
         self.send_button.setEnabled(False)
@@ -772,7 +784,7 @@ class MainWindow(QMainWindow):
 
     def open_directory_dialog(self):
         directory_path = select_directory_dialog(parent=self, default_dir=get_directory(config.config[CFG_PATH]))
-        self.reference_label.setText(f'<a href={directory_path}>{UI_REFERENCE}:</a>')
+        self.reference_label.setText(f'<a href="{QUrl.fromLocalFile(directory_path).toString()}">{UI_REFERENCE}:</a>')
         self.reference_label.setToolTip(directory_path)
         if directory_path:
             self.status_bar.showMessage(f"{UI_SELECTED}: {directory_path}")
@@ -788,7 +800,7 @@ class MainWindow(QMainWindow):
     def paste_reference_link(self):
         clipboard = QApplication.clipboard()
         pasted_text = clipboard.text()
-        self.reference_label.setText(f'<a href={pasted_text}>{UI_REFERENCE}:</a>')
+        self.reference_label.setText(f'<a href="{QUrl.fromLocalFile(pasted_text).toString()}">{UI_REFERENCE}:</a>')
         self.reference_label.setToolTip(pasted_text)
         if pasted_text:
             self.status_bar.showMessage(f"{UI_PASTED}: {pasted_text}")
@@ -802,10 +814,11 @@ class MainWindow(QMainWindow):
             self.status_bar.showMessage(f"{UI_DELETED}: {deleted_text}")
             self.check_send_button()
 
-    def show_user(self):
+    def show_user_profile(self):
         if self.update_ui is None:
             self.update_ui = UserUpdate()
         self.update_ui.show()
+        self.update_ui.accepted.connect(self.update_treeview)
 
     def show_about(self):
         if self.about_ui is None:

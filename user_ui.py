@@ -117,7 +117,7 @@ class UserSignup(UserDialog):
             self.signup_button.setEnabled(False)
 
     def user_signup(self):
-        if email_exists(self.email_input.text()):
+        if email_exists(self.email_input.text().strip().lower()):
             show_info_msg(text=MSG_EMAIL_EXISTS)
         else:
             add_new_user(first_name=self.first_name_input.text().strip().title(),
@@ -125,7 +125,7 @@ class UserSignup(UserDialog):
                          email=self.email_input.text().strip().lower(),
                          pin=self.pin_input.text())
 
-            config.config[CFG_EMAIL] = self.email_input.text()
+            config.config[CFG_EMAIL] = self.email_input.text().strip().lower()
             config.config[CFG_PIN] = self.pin_input.text()
             write_config()
             self.accept()
@@ -199,14 +199,16 @@ class UserUpdate(UserDialog):
             self.update_button.setEnabled(False)
 
     def user_update(self):
-        if self.email_input.text() == config.config[CFG_EMAIL] or not email_exists(self.email_input.text()):
+        if (self.email_input.text().strip().lower() == config.config[CFG_EMAIL] or
+                not email_exists(self.email_input.text().strip().lower())):
             update_user_data(first_name=self.first_name_input.text().strip().title(),
                              last_name=self.last_name_input.text().strip().title(),
                              email=self.email_input.text().strip().lower(),
                              pin=self.pin_input.text())
 
-            if config.config[CFG_EMAIL] != self.email_input.text() or config.config[CFG_PIN] != self.pin_input.text():
-                config.config[CFG_EMAIL] = self.email_input.text()
+            if (config.config[CFG_EMAIL] != self.email_input.text().strip().lower() or
+                    config.config[CFG_PIN] != self.pin_input.text()):
+                config.config[CFG_EMAIL] = self.email_input.text().strip().lower()
                 config.config[CFG_PIN] = self.pin_input.text()
                 write_config()
             self.accept()
@@ -302,15 +304,15 @@ class UserLogin(QDialog):
             self.login_button.setEnabled(False)
 
     def check_data(self):
-        if not email_exists(email=self.email_input.text()):
+        if not email_exists(email=self.email_input.text().strip().lower()):
             return False
         if not valid_pin(self.pin_input.text()):
             return False
         return True
 
     def user_login(self):
-        if check_login(email=self.email_input.text().lower(), pin=self.pin_input.text()):
-            config.config[CFG_EMAIL] = self.email_input.text()
+        if check_login(email=self.email_input.text().strip().lower(), pin=self.pin_input.text()):
+            config.config[CFG_EMAIL] = self.email_input.text().strip().lower()
             config.config[CFG_PIN] = self.pin_input.text()
             write_config()
             self.accept()

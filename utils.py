@@ -34,7 +34,7 @@ def exists(path):
 
 def send_email(email=DEV_EMAIL, title=f"{APP_NAME} {APP_VERSION}"):
     """Sends email optionally to given address and title or by default to app dev address."""
-    mailto_link = f"mailto:{email}?subject=[{title}] "
+    mailto_link = f"mailto:{email}?subject={title} "
     QDesktopServices.openUrl(QUrl(mailto_link))
 
 
@@ -51,19 +51,23 @@ def get_directory(file_path):
 def select_directory_dialog(parent=None, title=MSG_SELECT_DIR, default_dir=""):
     """Opens a select folder dialog given optionally parent class, title, and default directory."""
     directory_path = QFileDialog.getExistingDirectory(parent, title, default_dir)
-    return directory_path
+    return norm_path(directory_path)
 
 
 def select_db_file_dialog(parent=None, title=MSG_SELECT_FILE, default_dir=""):
     """Opens a select .db file dialog given optionally parent class, title, and default directory."""
     file_path, _ = QFileDialog.getOpenFileName(parent, title, default_dir, "Database Files (*.db)")
-    return file_path
+    return norm_path(file_path)
 
 
 def join_paths(directory, file_name):
     """Joins directory and file into os-valid and py-recognizable path."""
     return os.path.normpath(os.path.join(directory, file_name))
 
+
+def norm_path(path):
+    """Make path os-valid and py-recognizable."""
+    return os.path.normpath(path)
 
 
 def valid_email(email):
