@@ -1,10 +1,10 @@
 import sys
-from PyQt5.QtGui import QCursor
+from PyQt5.QtGui import QCursor, QIcon
 from PyQt5.QtWidgets import (QApplication, QDialog, QLineEdit, QPushButton, QVBoxLayout, QGroupBox, QHBoxLayout,
                              QRadioButton, QToolButton, QFrame, QMenu, QAction)
 from PyQt5.QtCore import Qt
 from user_ui import UserSignup, UserLogin
-from constants import APP_NAME, UI_DB_EXISTING, UI_DB_NEW, DB_NAME, UI_CONNECT, UI_SELECT_PATH, CFG_PATH
+from constants import APP_NAME, UI_DB_EXISTING, UI_DB_NEW, DB_NAME, UI_CONNECT, UI_SELECT_PATH, CFG_PATH, MAIN_ICON
 from sqlite_db import create_db
 from utils import select_db_file_dialog, select_directory_dialog, join_paths, get_basename, get_directory
 import config
@@ -15,6 +15,7 @@ class ConfigDialog(QDialog):
         super().__init__()
 
         self.setWindowTitle(APP_NAME)
+        self.setWindowIcon(QIcon(MAIN_ICON))
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self.setModal(True)
 
