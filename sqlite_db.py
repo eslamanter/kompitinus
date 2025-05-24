@@ -17,7 +17,7 @@ from constants import (DB_USERS_ID_BASE, DB_USERS_TABLE, DB_USER_ID,
 
 
 def export_report_view():
-    """Exports DB report view into a new Excel worksheet of a new or an existing workbook in the local directory."""
+    """Exports DB report view into a new Excel worksheet of a new or an existing workbook in the .exe directory."""
     if not exists(config.config[CFG_PATH]):
         show_warning_msg(MSG_DB_UNREACHABLE)
     else:

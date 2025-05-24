@@ -3,9 +3,9 @@ import requests
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QMenu
 from PyQt5.QtWebEngineWidgets import QWebEngineView
+from PyQt5.QtCore import Qt
 from markdown import markdown
 from constants import APP_NAME, UI_README_TITLE, README_URL, MAIN_ICON
-from PyQt5.QtCore import Qt
 
 
 class ReadmeViewer(QMainWindow):

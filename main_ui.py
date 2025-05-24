@@ -1,4 +1,5 @@
 import sys
+import config
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QFrame, QTableView, QSplitter, QLineEdit,
     QTextEdit, QCheckBox, QPushButton, QDateTimeEdit, QTreeView, QStatusBar, QMenu, QAction, QToolButton,
@@ -6,16 +7,15 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QCursor, QBrush, QColor, QTextCharFormat, QFont, QIcon
 from PyQt5.QtCore import Qt, QDateTime, QDate, QTime, QUrl
 from holidays.countries import Italy
+from datetime import date
 from readme_ui import ReadmeViewer
 from about_ui import AboutScreen
-from constants import *
 from sqlite_db import (get_all_users, add_task, update_task, get_tasks_by_user, get_task_details, get_user_full_name,
                        get_user_email, export_report_view, get_my_seen_at, update_my_seen_at)
 from user_ui import UserUpdate
 from utils import (send_email, select_directory_dialog, get_directory, show_question_msg, count_days, playsound_ok,
                    dummy_function)
-from datetime import date
-import config
+from constants import *
 
 
 class TaskTableModel(QStandardItemModel):
@@ -106,6 +106,7 @@ class MainWindow(QMainWindow):
         self.USER_ROLE = Qt.UserRole + 2
 
         def create_sub_items(name):
+            """Creates TreeView sub-items."""
             item = QStandardItem(name)
             item.setData(name, self.FILTER_ROLE)
             return item
@@ -425,6 +426,7 @@ class MainWindow(QMainWindow):
         self.set_clear_mode()  # Clear task details panel as app starts
 
     def extend_left_splitter(self, extend=True):
+        """Extends/collapses TableView."""
         width =  self.left_splitter.width()
         if extend:
             if not self.left_splitter.sizes()[1]:
@@ -433,6 +435,7 @@ class MainWindow(QMainWindow):
             self.left_splitter.setSizes([width, 0])
 
     def extend_right_splitter(self, extend=True):
+        """Extends/collapses task details panel."""
         width = self.right_splitter.width()
         if extend:
             if not self.right_splitter.sizes()[1]:
@@ -441,13 +444,14 @@ class MainWindow(QMainWindow):
             self.right_splitter.setSizes([width, 0])
 
     def is_special_date(self, qdate):
+        """Checks if given date is not a working day."""
         # Convert QDate to Python date
         py_date = date(qdate.year(), qdate.month(), qdate.day())
         # Check if it's a holiday or weekend
         return py_date in self.italy_holidays or qdate.dayOfWeek() in WEEKENDS
 
     def set_deadlines_next_working_midday(self):
-        """Set deadlines date-time as next working midday."""
+        """Sets deadlines date-time as next working midday."""
         day = QDate.currentDate().addDays(1)
         while self.is_special_date(day):
             day = day.addDays(1)
@@ -456,6 +460,7 @@ class MainWindow(QMainWindow):
             date_time_input.setDateTime(next_working_midday)
 
     def highlight_selected_deadlines(self):
+        """Sets DateTime input text color based on working date and hour compliance with company policy."""
         selected_datetime_due = self.due_at_input.dateTime()
         selected_datetime_expected = self.expected_at_input.dateTime()
 
@@ -468,6 +473,7 @@ class MainWindow(QMainWindow):
 
         # Check if time is outside working hours (before 09:00 or after 19:00)
         def is_outside_working_hours(qtime):
+            """Checks if a given time is within company working hours."""
             return qtime.hour() < WORKING_HOURS[0] or qtime.hour() > WORKING_HOURS[1]
 
         # Apply red color if it's a holiday, weekend, or outside working hours
@@ -514,6 +520,7 @@ class MainWindow(QMainWindow):
         self.expected_at_input.dateTimeChanged.connect(self.highlight_selected_deadlines)
 
     def update_due_expected_days(self):
+        """Updates task due date and task expected date remaining days and formats text color."""
         due_at = self.due_at_input.text() + ":00"
         days_to_due = count_days(deadline=due_at)
         expected_at = self.expected_at_input.text() + ":00"
@@ -535,7 +542,7 @@ class MainWindow(QMainWindow):
                 self.expected_at_days.setStyleSheet("color: black;")
 
     def set_treeview_readonly(self):
-        """Disable editing for all items in the tree view."""
+        """Disable editing for all items in the TreeView."""
         for row in range(self.tree_model.rowCount()):
             parent_item = self.tree_model.item(row)
             parent_item.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)  # No editing
@@ -557,6 +564,7 @@ class MainWindow(QMainWindow):
                 self.send_button.setEnabled(False)
 
     def show_sender_receiver_info(self, sender_id, receiver_id, task_title=""):
+        """Shows sender and receiver info in the task details panel."""
         sender_first_name, sender_last_name = get_user_full_name(sender_id)
         self.sender_full_name.setText(f"{sender_first_name} {sender_last_name}")
         sender_email = get_user_email(sender_id)
@@ -576,7 +584,7 @@ class MainWindow(QMainWindow):
         self.receiver_email.linkActivated.connect(lambda: send_email(email=receiver_email, title=task_title))
 
     def on_table_row_selected(self):
-        """Retrieve task ID from the selected row and fill task details panel."""
+        """Retrieves task ID from the selected row and fills task details panel."""
         item_index = self.table_view.selectionModel().currentIndex()
         id_col_index =  self.table_view.model().index(item_index.row(), 0)
         self.current_task_id = self.table_view.model().data(id_col_index, Qt.UserRole)
@@ -657,6 +665,7 @@ class MainWindow(QMainWindow):
         self.adjust_tableview()
 
     def update_treeview(self):
+        """Updates TreeView static items: user email and active users full names and emails."""
         # Update user email in case of an update during app run
         self.my_boxes_items.setText(config.config[CFG_EMAIL])
 
@@ -678,6 +687,7 @@ class MainWindow(QMainWindow):
         self.set_treeview_readonly()
 
     def adjust_tableview(self):
+        """Setups TableView columns sizing."""
         self.table_view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)  # Default sizing
         self.table_view.horizontalHeader().setSectionResizeMode(4, QHeaderView.Stretch)
         self.table_view.setWordWrap(True)
@@ -695,6 +705,7 @@ class MainWindow(QMainWindow):
             self.extend_right_splitter()
 
     def send_task(self):
+        """Sends/Updates inserted task details to DB."""
         self.send_button.setEnabled(False)
         if self.current_task_id:
             update_result = update_task(title=self.title_input.text().upper(),
@@ -736,16 +747,18 @@ class MainWindow(QMainWindow):
             else:
                 self.send_button.setEnabled(True)
 
-    def enable_task_details(self, enabled_bool):
+    def enable_task_details(self, enable=True):
+        """Enables/disables all task details panel elements."""
         for element in self.task_details_widget.findChildren(QWidget):
-            element.setEnabled(enabled_bool)
+            element.setEnabled(enable)
         for action in self.task_actions:
-            action.setEnabled(enabled_bool)
+            action.setEnabled(enable)
 
     def set_inbox_mode(self):
+        """Enables only task receiver editable sections."""
         self.current_task_id = None
         self.new_receiver_id = None
-        self.enable_task_details(True)
+        self.enable_task_details()
         self.title_input.setReadOnly(True)
         self.body_input.setReadOnly(True)
         self.reply_input.setReadOnly(False)
@@ -753,9 +766,10 @@ class MainWindow(QMainWindow):
             element.setEnabled(False)
 
     def set_outbox_mode(self):
+        """Enables only task sender editable sections."""
         self.current_task_id = None
         self.new_receiver_id = None
-        self.enable_task_details(True)
+        self.enable_task_details()
         self.title_input.setReadOnly(False)
         self.body_input.setReadOnly(False)
         self.reply_input.setReadOnly(True)
@@ -763,9 +777,10 @@ class MainWindow(QMainWindow):
             element.setEnabled(False)
 
     def set_send_mode(self):
+        """Enables only to-send task editable sections."""
         self.current_task_id = None
         self.set_deadlines_next_working_midday()
-        self.enable_task_details(True)
+        self.enable_task_details()
         self.title_input.setReadOnly(False)
         self.body_input.setReadOnly(False)
         self.reply_input.setReadOnly(True)
@@ -773,6 +788,7 @@ class MainWindow(QMainWindow):
             element.setEnabled(False)
 
     def set_clear_mode(self):
+        """Disables all task details panel and clear all inputs."""
         self.set_deadlines_next_working_midday()
         for element in self.clearable_elements:
             element.setText("")
@@ -783,6 +799,7 @@ class MainWindow(QMainWindow):
         self.enable_task_details(False)
 
     def open_directory_dialog(self):
+        """Opens select directory dialog for reference text."""
         directory_path = select_directory_dialog(parent=self, default_dir=get_directory(config.config[CFG_PATH]))
         self.reference_label.setText(f'<a href="{QUrl.fromLocalFile(directory_path).toString()}">{UI_REFERENCE}:</a>')
         self.reference_label.setToolTip(directory_path)
@@ -791,6 +808,7 @@ class MainWindow(QMainWindow):
             self.check_send_button()
 
     def copy_reference_link(self):
+        """Copies reference text."""
         copied_text = self.reference_label.toolTip()
         clipboard = QApplication.clipboard()
         clipboard.setText(copied_text)
@@ -798,6 +816,7 @@ class MainWindow(QMainWindow):
             self.status_bar.showMessage(f"{UI_COPIED}: {copied_text}")
 
     def paste_reference_link(self):
+        """Pastes reference text."""
         clipboard = QApplication.clipboard()
         pasted_text = clipboard.text()
         self.reference_label.setText(f'<a href="{QUrl.fromLocalFile(pasted_text).toString()}">{UI_REFERENCE}:</a>')
@@ -807,6 +826,7 @@ class MainWindow(QMainWindow):
             self.check_send_button()
 
     def delete_reference_link(self):
+        """Deletes reference text."""
         deleted_text = self.reference_label.toolTip()
         self.reference_label.setText(f"{UI_REFERENCE}:")
         self.reference_label.setToolTip("")
@@ -815,22 +835,26 @@ class MainWindow(QMainWindow):
             self.check_send_button()
 
     def show_user_profile(self):
+        """Shows user's info form."""
         if self.update_ui is None:
             self.update_ui = UserUpdate()
         self.update_ui.show()
         self.update_ui.accepted.connect(self.update_treeview)
 
     def show_about(self):
+        """Shows about UI."""
         if self.about_ui is None:
             self.about_ui = AboutScreen()
         self.about_ui.show()
 
     def show_readme(self):
+        """Shows readme UI."""
         if self.readme_ui is None:
             self.readme_ui = ReadmeViewer()
         self.readme_ui.show()
 
     def center(self):
+        """Centers main window."""
         screen = QApplication.desktop().screenGeometry()
         size = self.geometry()
         self.move((screen.width() - size.width()) // 2, (screen.height() - size.height()) // 2)

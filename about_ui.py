@@ -1,7 +1,7 @@
+import sys
 from PyQt5.QtWidgets import QApplication, QLabel, QVBoxLayout, QWidget, QPushButton
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QCursor, QIcon
-import sys
+from PyQt5.QtGui import QCursor
 from constants import APP_NAME, APP_VERSION, APP_PHASE, APP_ABOUT, APP_DISCLAIMER, APP_COPYRIGHT, DEV_EMAIL, UI_CLOSE
 from utils import send_email
 

@@ -1,12 +1,12 @@
 import sys
+import config
 from PyQt5.QtGui import QCursor, QIntValidator, QIcon
 from PyQt5.QtWidgets import (QApplication, QDialog, QLineEdit, QPushButton, QVBoxLayout, QLabel, QGroupBox, QFrame,
                              QHBoxLayout)
 from PyQt5.QtCore import Qt
-import config
 from constants import (APP_NAME, UI_EMAIL, UI_PIN, UI_FIRST_NAME, UI_LAST_NAME, UI_UPDATE, UI_4_DIGITS, UI_SIGNUP,
                        UI_LOGOUT, UI_LOGIN, MSG_EMAIL_EXISTS, CFG_EMAIL, CFG_PIN, CFG_PATH, MSG_LOGOUT, UI_NEW_USER,
-                       UI_REGISTERED, UI_COMPANY, UI_USER_DATA, MAIN_ICON)
+                       UI_REGISTERED, UI_COMPANY, UI_USER_DATA, MAIN_ICON, UI_MAX_NAME_LEN, UI_MAX_EMAIL_LEN)
 from sqlite_db import email_exists, check_login, add_new_user, update_user_data, get_user_full_name
 from utils import show_info_msg, write_config, show_question_msg, valid_email, valid_pin, playsound_hand
 
@@ -27,12 +27,15 @@ class UserDialog(QDialog):
 
         self.first_name_label = QLabel(f"{UI_FIRST_NAME}:")
         self.first_name_input = QLineEdit()
+        self.first_name_input.setMaxLength(UI_MAX_NAME_LEN)
 
         self.last_name_label = QLabel(f"{UI_LAST_NAME}:")
         self.last_name_input = QLineEdit()
+        self.last_name_input.setMaxLength(UI_MAX_NAME_LEN)
 
         self.email_label = QLabel(f"{UI_EMAIL}: ({UI_COMPANY})")
         self.email_input = QLineEdit(config.config[CFG_EMAIL])
+        self.email_input.setMaxLength(UI_MAX_EMAIL_LEN)
 
         self.pin_label = QLabel(f"{UI_PIN}: ({UI_4_DIGITS})")
         self.pin_input = QLineEdit(config.config[CFG_PIN])
@@ -56,6 +59,7 @@ class UserDialog(QDialog):
         self.setLayout(layout)
 
     def check_data(self):
+        """Validates user's data: first name, last name, email, and PIN."""
         if not self.first_name_input.text() or not self.last_name_input.text():
             return False
         if not valid_email(self.email_input.text()):
@@ -90,9 +94,9 @@ class UserSignup(UserDialog):
         horizontal_line.setFrameShadow(QFrame.Sunken)
         layout.addWidget(horizontal_line)
 
-        # Add logout button
         login_layout = QHBoxLayout()
 
+        # Add login button
         self.login_button = QPushButton(f"{UI_REGISTERED}? {UI_LOGIN}")
         self.login_button.setCursor(QCursor(Qt.PointingHandCursor))
         self.login_button.clicked.connect(self.user_login)
@@ -111,12 +115,14 @@ class UserSignup(UserDialog):
         self.login_ui = None
 
     def check_signup_button(self):
+        """Enables/disables signup button based on user's given data."""
         if self.check_data():
             self.signup_button.setEnabled(True)
         else:
             self.signup_button.setEnabled(False)
 
     def user_signup(self):
+        """Signs up as a new user and writes config file or shows user already exists."""
         if email_exists(self.email_input.text().strip().lower()):
             show_info_msg(text=MSG_EMAIL_EXISTS)
         else:
@@ -131,6 +137,7 @@ class UserSignup(UserDialog):
             self.accept()
 
     def user_login(self):
+        """shows login form instead of sign up form."""
         self.accept()
         if self.login_ui is None:
             self.login_ui = UserLogin()
@@ -177,13 +184,14 @@ class UserUpdate(UserDialog):
         logout_layout.addStretch()
         layout.addLayout(logout_layout)
 
-        self.get_user_info()
+        self.get_user_full_name()
         self.update_button.setEnabled(False)
 
         self.setLayout(layout)
         self.adjustSize()
 
-    def get_user_info(self):
+    def get_user_full_name(self):
+        """Gets local user first name and last name."""
         user_name = get_user_full_name(config.my_id)
         if user_name:
             first_name, last_name = user_name
@@ -193,12 +201,14 @@ class UserUpdate(UserDialog):
             self.pin_input.setText(config.config[CFG_PIN])
 
     def check_update_button(self):
+        """Enables/disables update button based on user's given data."""
         if self.check_data():
             self.update_button.setEnabled(True)
         else:
             self.update_button.setEnabled(False)
 
     def user_update(self):
+        """Updates user info: first name, last name, email, PIN and writes config file."""
         if (self.email_input.text().strip().lower() == config.config[CFG_EMAIL] or
                 not email_exists(self.email_input.text().strip().lower())):
             update_user_data(first_name=self.first_name_input.text().strip().title(),
@@ -216,6 +226,7 @@ class UserUpdate(UserDialog):
             show_info_msg(text=MSG_EMAIL_EXISTS)
 
     def user_logout(self):
+        """Logs out the user and empties config data."""
         response = show_question_msg(text=MSG_LOGOUT)
         if response:
             config.config[CFG_PATH] = ""
@@ -226,7 +237,7 @@ class UserUpdate(UserDialog):
             sys.exit()
 
     def closeEvent(self, event):
-        self.get_user_info()
+        self.get_user_full_name()
         event.accept()
 
 
@@ -298,12 +309,14 @@ class UserLogin(QDialog):
         self.signup_ui = None
 
     def check_login_button(self):
+        """Enables/disables login button based on user's given credentials."""
         if self.check_data():
             self.login_button.setEnabled(True)
         else:
             self.login_button.setEnabled(False)
 
     def check_data(self):
+        """Validates user's inserted credentials."""
         if not email_exists(email=self.email_input.text().strip().lower()):
             return False
         if not valid_pin(self.pin_input.text()):
@@ -311,6 +324,7 @@ class UserLogin(QDialog):
         return True
 
     def user_login(self):
+        """Logs in the user and writes config file."""
         if check_login(email=self.email_input.text().strip().lower(), pin=self.pin_input.text()):
             config.config[CFG_EMAIL] = self.email_input.text().strip().lower()
             config.config[CFG_PIN] = self.pin_input.text()
@@ -321,6 +335,7 @@ class UserLogin(QDialog):
 
 
     def user_signup(self):
+        """shows sign up form instead of login form."""
         self.accept()
         if self.signup_ui is None:
             self.signup_ui = UserSignup()

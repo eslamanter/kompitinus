@@ -164,6 +164,8 @@ UI_FIRST_NAME = "Nome"
 UI_LAST_NAME = "Cognome"
 UI_COMPANY = "Aziendale"
 UI_4_DIGITS = "4 Cifre"
+UI_MAX_NAME_LEN = 35
+UI_MAX_EMAIL_LEN = 254
 
     # Update User UI
 UI_UPDATE = "Aggiorna"

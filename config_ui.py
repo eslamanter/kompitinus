@@ -1,4 +1,5 @@
 import sys
+import config
 from PyQt5.QtGui import QCursor, QIcon
 from PyQt5.QtWidgets import (QApplication, QDialog, QLineEdit, QPushButton, QVBoxLayout, QGroupBox, QHBoxLayout,
                              QRadioButton, QToolButton, QFrame, QMenu, QAction)
@@ -7,7 +8,6 @@ from user_ui import UserSignup, UserLogin
 from constants import APP_NAME, UI_DB_EXISTING, UI_DB_NEW, DB_NAME, UI_CONNECT, UI_SELECT_PATH, CFG_PATH, MAIN_ICON
 from sqlite_db import create_db
 from utils import select_db_file_dialog, select_directory_dialog, join_paths, get_basename, get_directory
-import config
 
 
 class ConfigDialog(QDialog):
@@ -75,6 +75,7 @@ class ConfigDialog(QDialog):
         self.signup_ui = None
 
     def select_db_path(self):
+        """Opens DB file/directory selection dialog."""
         if self.db_existing.isChecked():
             file_path = select_db_file_dialog(parent=self, default_dir=get_directory(self.db_path.text()))
             if file_path:
@@ -88,6 +89,7 @@ class ConfigDialog(QDialog):
                 self.connect_button.setEnabled(True)
 
     def connect_db(self):
+        """Creates a DB and shows authn form."""
         db_path = self.db_path.text()
         if db_path:
             config.config[CFG_PATH] = db_path
@@ -103,11 +105,13 @@ class ConfigDialog(QDialog):
                 self.show_login()
 
     def show_login(self):
+        """Shows login form."""
         if self.login_ui is None:
             self.login_ui = UserLogin()
         self.login_ui.exec()
 
     def show_signup(self):
+        """Shows sign up form."""
         if self.signup_ui is None:
             self.signup_ui = UserSignup()
         self.signup_ui.exec()

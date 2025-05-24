@@ -1,11 +1,11 @@
 import json
 import os
+import winsound
+import config
 from PyQt5.QtWidgets import QMessageBox, QFileDialog
 from PyQt5.QtGui import QDesktopServices, QIcon
 from PyQt5.QtCore import QUrl, QDateTime
 from constants import DEV_EMAIL, APP_NAME, APP_VERSION, MSG_SELECT_DIR, MSG_SELECT_FILE, CFG_FILE, MAIN_ICON
-import winsound
-import config
 
 
 def count_days(deadline):
@@ -33,7 +33,7 @@ def exists(path):
 
 
 def send_email(email=DEV_EMAIL, title=f"{APP_NAME} {APP_VERSION}"):
-    """Sends email optionally to given address and title or by default to app dev address."""
+    """Sends email with optionally given address and title or by default to app dev address."""
     mailto_link = f"mailto:{email}?subject={title} "
     QDesktopServices.openUrl(QUrl(mailto_link))
 
@@ -85,14 +85,17 @@ def valid_pin(pin):
 
 
 def playsound_hand():
+    """Plays windows hand icon sound."""
     winsound.MessageBeep(winsound.MB_ICONHAND)
 
 
 def playsound_ok():
+    """Plays windows ok sound."""
     winsound.MessageBeep(winsound.MB_OK)
 
 
 def show_question_msg(text, title=APP_NAME):
+    """Shows question message box given a message text and optionally a message title."""
     msg_box = QMessageBox()
     msg_box.setWindowIcon(QIcon(MAIN_ICON))
     msg_box.setWindowTitle(title)
@@ -104,6 +107,7 @@ def show_question_msg(text, title=APP_NAME):
 
 
 def show_info_msg(text, title=APP_NAME):
+    """Shows information message box given a message text and optionally a message title."""
     msg_box = QMessageBox()
     msg_box.setWindowIcon(QIcon(MAIN_ICON))
     msg_box.setWindowTitle(title)
@@ -114,6 +118,7 @@ def show_info_msg(text, title=APP_NAME):
 
 
 def show_warning_msg(text, title=APP_NAME):
+    """Shows warning message box given a message text and optionally a message title."""
     msg_box = QMessageBox()
     msg_box.setWindowIcon(QIcon(MAIN_ICON))
     msg_box.setWindowTitle(title)
@@ -124,4 +129,5 @@ def show_warning_msg(text, title=APP_NAME):
 
 
 def dummy_function():
+    """Does nothing!"""
     pass
