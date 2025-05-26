@@ -29,7 +29,7 @@ def check_config():
         if CFG_PATH in json_data:
             # Check if DB name is correct
             if get_basename(json_data[CFG_PATH]) == DB_NAME:
-                # Check if config file contains DB path
+                # Check if config file contains existing/reachable DB
                 if exists(json_data[CFG_PATH]):
                     # Store DB path
                     config.config[CFG_PATH] = json_data[CFG_PATH]
@@ -53,9 +53,9 @@ def check_config():
                             show_login_ui()
                     else: # If user email or user pin or both are missing in config.json
                         show_login_ui()
-                else: # If DB file is inaccessible
+                else: # If DB file is unreachable
                     show_warning_msg(text=MSG_DB_UNREACHABLE)
-                    sys.exit()
+                    sys.exit() # A probable local server slow connection
             else: # If DB name is wrong
                 show_config_ui()
         else: # If path is missing in config.json

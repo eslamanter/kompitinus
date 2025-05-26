@@ -21,10 +21,10 @@ from constants import *
 class TaskTableModel(QStandardItemModel):
     def __init__(self, tasks, parent=None):
         super().__init__(parent)
-
+        # Set task cols items for the TableView model
         self.setHorizontalHeaderLabels([UI_TASK_ID, UI_MODIFIED_AT, UI_SENDER, UI_RECEIVER, UI_TASK, UI_DUE_AT, UI_NOTES])
         current_time = QDateTime.currentDateTime().toString("yyyy-MM-dd HH:mm:ss")
-
+        # Define normal and bold font
         normal_font = QFont()
         normal_font.setBold(False)
         bold_font = QFont()
@@ -60,7 +60,7 @@ class TaskTableModel(QStandardItemModel):
                 notes += f"- {UI_EXPIRED}\n" if expired else ""
 
             notes_item = QStandardItem(notes.strip())
-
+            # Set task font to bold if modified after last local user last seen
             task_font = normal_font
             if my_last_seen:
                 if my_last_seen < modified_at:
@@ -70,16 +70,16 @@ class TaskTableModel(QStandardItemModel):
                             title_item, due_at_item, notes_item]):
                 item.setFont(task_font)
 
-                if archived:
+                if archived: # Archived tasks colored grey
                     item.setBackground((QBrush(QColor(*COLOR_LIGHT_GREY))))
-                elif done:
+                elif done: # Done tasks colored blue
                     item.setBackground((QBrush(QColor(*COLOR_LIGHT_BLUE))))
                 elif expired:
-                    if starred:
+                    if starred: # Starred expired tasks colored red
                         item.setBackground((QBrush(QColor(*COLOR_LIGHT_RED))))
-                    else:
+                    else: # Non-starred expired tasks colored orange
                         item.setBackground((QBrush(QColor(*COLOR_LIGHT_ORANGE))))
-                else:
+                else: # In progress tasks colored green
                     item.setBackground((QBrush(QColor(*COLOR_LIGHT_GREEN))))
 
                 item.setFlags(item.flags() & ~Qt.ItemIsEditable)  # Disable editing
@@ -95,15 +95,16 @@ class MainWindow(QMainWindow):
         self.setWindowIcon(QIcon(MAIN_ICON))
         central_widget = QWidget()
 
+        # TreeView on the left side
         self.tree_view = QTreeView(self)
         self.tree_model = QStandardItemModel()
         self.tree_view.setModel(self.tree_model)
         self.tree_view.header().setHidden(True)
 
         # Define custom item roles for the treeview
-        self.BOX_ROLE = Qt.UserRole
-        self.FILTER_ROLE = Qt.UserRole + 1
-        self.USER_ROLE = Qt.UserRole + 2
+        self.BOX_ROLE = Qt.UserRole # Inbox/Outbox user role
+        self.FILTER_ROLE = Qt.UserRole + 1 # Starred/Expired user role having already Inbox/Outbox user role
+        self.USER_ROLE = Qt.UserRole + 2 # User ID user role
 
         def create_sub_items(name):
             """Creates TreeView sub-items."""
@@ -130,7 +131,7 @@ class MainWindow(QMainWindow):
         self.my_boxes_items.appendRow(inbox_item)
         self.my_boxes_items.appendRow(outbox_item)
 
-        self.update_treeview() # Update user email on the top of the treeview and the users items under all users
+        self.update_treeview() # Update user email on the top of the TreeView and the users items under all users
 
         self.tree_view.selectionModel().selectionChanged.connect(self.on_tree_item_selected)
 
@@ -139,22 +140,23 @@ class MainWindow(QMainWindow):
         root_item.appendRow(self.my_boxes_items)
         root_item.appendRow(self.all_users_items)
 
-        self.set_treeview_readonly() # Disable modification for all parent and child items of the treeview
-        self.tree_view.expandAll() # Expand all treeview
+        self.set_treeview_readonly() # Disable modification for all parent and child items of the TreeView
+        self.tree_view.expandAll() # Expand all TreeView
 
-        # Add send task to treeview user by double-click
+        # Add send task to TreeView user by double-click
         self.tree_view.doubleClicked.connect(self.on_item_double_clicked)
 
-        # Create table view
+        # Create TableView
         self.table_view = QTableView()
         self.table_view.setSelectionBehavior(QTableView.SelectRows)  # Selects the entire row
         self.table_view.setSelectionMode(QAbstractItemView.SingleSelection)  # Allows only one row at a time
 
-        # Create a splitter and add both tree view and table view
+        # Create a splitter and add both TreeView and TableView
         self.left_splitter = QSplitter(Qt.Horizontal)
         self.left_splitter.addWidget(self.tree_view)
         self.left_splitter.addWidget(self.table_view)
 
+        # Right task details panel:
         # Left column: Task ID, Created At, Modified At
         left_meta_layout = QVBoxLayout()
         self.task_id_label = QLabel(f"{UI_TASK_ID}:")
@@ -276,7 +278,7 @@ class MainWindow(QMainWindow):
         due_at_layout.addWidget(self.due_at_label)
         due_at_layout.addWidget(self.due_at_days)
         self.due_at_input = QDateTimeEdit()
-        self.due_at_input.setDisplayFormat("yyyy-MM-dd HH:mm")
+        self.due_at_input.setDisplayFormat("yyyy-MM-dd HH:mm") # Exclude :ss (To be assumed :00)
         self.due_at_input.setCalendarPopup(True)
         main_vertical_layout.addLayout(due_at_layout)
         main_vertical_layout.addWidget(self.due_at_input)
@@ -289,7 +291,7 @@ class MainWindow(QMainWindow):
         expected_at_layout.addWidget(self.expected_at_label)
         expected_at_layout.addWidget(self.expected_at_days)
         self.expected_at_input = QDateTimeEdit()
-        self.expected_at_input.setDisplayFormat("yyyy-MM-dd HH:mm")
+        self.expected_at_input.setDisplayFormat("yyyy-MM-dd HH:mm") # Exclude :ss (To be assumed :00)
         self.expected_at_input.setCalendarPopup(True)
         main_vertical_layout.addLayout(expected_at_layout)
         main_vertical_layout.addWidget(self.expected_at_input)
@@ -405,9 +407,9 @@ class MainWindow(QMainWindow):
 
         # Attributes
         self.current_task_id = None # Stores current task ID. Stores None if no task selected or upon sending a new task
-        self.new_receiver_id = None # Stores new task receiver user ID. Stores None if task exists
+        self.new_receiver_id = None # Stores new task receiver user ID. Stores None if task already exists
 
-        # Setup calendars to highlight Italy holidays in red
+        # Setup calendars to highlight Italy's holidays in red
         current_year = QDate.currentDate().year()
         self.italy_holidays = Italy(years=[current_year, current_year + 1])
         self.setup_calendars()
@@ -565,6 +567,7 @@ class MainWindow(QMainWindow):
 
     def show_sender_receiver_info(self, sender_id, receiver_id, task_title=""):
         """Shows sender and receiver info in the task details panel."""
+        # Sender info
         sender_first_name, sender_last_name = get_user_full_name(sender_id)
         self.sender_full_name.setText(f"{sender_first_name} {sender_last_name}")
         sender_email = get_user_email(sender_id)
@@ -573,7 +576,7 @@ class MainWindow(QMainWindow):
         self.sender_email.linkActivated.connect(lambda: dummy_function())
         self.sender_email.linkActivated.disconnect()
         self.sender_email.linkActivated.connect(lambda: send_email(email=sender_email, title=task_title))
-
+        # Receiver info
         receiver_first_name, receiver_last_name = get_user_full_name(receiver_id)
         self.receiver_full_name.setText(f"{receiver_first_name} {receiver_last_name}")
         receiver_email = get_user_email(receiver_id)
@@ -592,31 +595,31 @@ class MainWindow(QMainWindow):
         task_details = get_task_details(self.current_task_id)
         (task_id, sender_id, receiver_id, created_at, modified_at, title, body,
          reference, due_at, starred, done, expected_at, reply, archived) = task_details
-
+        # Task ID and Sender/Receiver Info
         self.task_id_value.setText(str(task_id))
         self.show_sender_receiver_info(sender_id=sender_id, receiver_id=receiver_id, task_title=title)
-
+        # Created/Modified At
         self.created_at_value.setText(created_at)
         self.modified_at_value.setText(modified_at)
-
+        # Title/Body/Reply
         self.title_input.setText(title)
         self.body_input.setText(body)
         self.reply_input.setText(reply)
-
+        # Reference
         self.reference_label.setText(f'<a href={reference}>{UI_REFERENCE}:</a>')
         self.reference_label.setToolTip(reference)
-
-        self.due_at_input.setDateTime(QDateTime.fromString(due_at[:16],"yyyy-MM-dd HH:mm"))
-        self.expected_at_input.setDateTime(QDateTime.fromString(expected_at[:16], "yyyy-MM-dd HH:mm"))
-
+        # Due/Expected At
+        self.due_at_input.setDateTime(QDateTime.fromString(due_at[:16],"yyyy-MM-dd HH:mm")) # Exclude :ss
+        self.expected_at_input.setDateTime(QDateTime.fromString(expected_at[:16], "yyyy-MM-dd HH:mm")) # Exclude :ss
+        # Starred/Done/Archived Checkboxes
         self.starred_checkbox.setChecked(bool(starred))
         self.done_checkbox.setChecked(bool(done))
         self.archived_checkbox.setChecked(bool(archived))
-
+        # Resets
         self.send_button.setEnabled(False)
-        self.update_due_expected_days()
-        self.highlight_selected_deadlines()
-        self.extend_right_splitter()
+        self.update_due_expected_days() # Update remaining days
+        self.highlight_selected_deadlines() # Update date format
+        self.extend_right_splitter() # Show task details panel
 
     def on_tree_item_selected(self):
         """Handles selecting a user item in the TreeView."""
@@ -627,87 +630,85 @@ class MainWindow(QMainWindow):
         filter_type = index.data(self.FILTER_ROLE) # Starred/Expired filter selection
 
         self.set_clear_mode()  # Clear task details panel
-        self.extend_right_splitter(False)
+        self.extend_right_splitter(False) # Hide task details panel
 
         if user_id:
             tasks = get_tasks_by_user(user_id=user_id, box_type=UI_INBOX)
             model = TaskTableModel(tasks)
             self.table_view.setModel(model)
-            self.extend_left_splitter()
+            self.extend_left_splitter() # Show task TableView
         elif box_type:
             if box_type == UI_INBOX:
-                self.set_inbox_mode()
+                self.set_inbox_mode() # Disable all elements except those allowed in inbox mode
             elif box_type == UI_OUTBOX:
-                self.set_outbox_mode()
+                self.set_outbox_mode() # Disable all elements except those allowed in outbox mode
             tasks = get_tasks_by_user(user_id=config.my_id, box_type=box_type)
             model = TaskTableModel(tasks)
             self.table_view.setModel(model)
             self.table_view.selectionModel().selectionChanged.connect(self.on_table_row_selected)
-            self.extend_left_splitter()
+            self.extend_left_splitter() # Show task TableView
         elif filter_type:
             parent_index = index.parent()
             box_type = parent_index.data(self.BOX_ROLE)
             if box_type == UI_INBOX:
-                self.set_inbox_mode()
+                self.set_inbox_mode() # Disable all elements except those allowed in inbox mode
             elif box_type == UI_OUTBOX:
-                self.set_outbox_mode()
+                self.set_outbox_mode() # Disable all elements except those allowed in outbox mode
             tasks = get_tasks_by_user(user_id=config.my_id, box_type=box_type, filter_type=filter_type)
             model = TaskTableModel(tasks)
             self.table_view.setModel(model)
             self.table_view.selectionModel().selectionChanged.connect(self.on_table_row_selected)
-            self.extend_left_splitter()
+            self.extend_left_splitter() # Show task TableView
         else:
             model = TaskTableModel([])
-            self.table_view.setModel(model)
-            self.extend_left_splitter(False)
-            self.update_treeview()
+            self.table_view.setModel(model) # Assign empty model to TableView
+            self.extend_left_splitter(False) # Hide task TableView in case no (invalid) TreeView index is selected
+            self.update_treeview() # Update static TreeView items in case no (invalid) index is selected
 
-        self.adjust_tableview()
+        self.adjust_tableview() # Set TableView col width behavior based on its content
 
     def update_treeview(self):
         """Updates TreeView static items: user email and active users full names and emails."""
-        # Update user email in case of an update during app run
+        # Update user email in case of a change during app run through User Update UI
         self.my_boxes_items.setText(config.config[CFG_EMAIL])
 
         # Clear all possible existing rows in users item
         self.all_users_items.removeRows(0, self.all_users_items.rowCount())
 
-        # Fetch updated user list from DB
-        users = get_all_users()
+        users = get_all_users() # Fetch updated user list from DB
 
-        # Populate the tree with new user data
+        # Populate the TreeView with new users data
         for user in users:
             user_id, first_name, last_name, email = user
-            user_item = QStandardItem(f"{last_name} {first_name}")
-            user_item.setData(user_id, self.USER_ROLE)
-            user_item.setData(email, Qt.ToolTipRole)
+            user_item = QStandardItem(f"{last_name} {first_name}") # Show full username
+            user_item.setData(user_id, self.USER_ROLE) # Store user ID as custom user role
+            user_item.setData(email, Qt.ToolTipRole) # Set user email as tooltip
             self.all_users_items.appendRow(user_item)
 
-        # Disable treeview modification
-        self.set_treeview_readonly()
+        self.set_treeview_readonly() # Disable TreeView modification
 
     def adjust_tableview(self):
-        """Setups TableView columns sizing."""
-        self.table_view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)  # Default sizing
-        self.table_view.horizontalHeader().setSectionResizeMode(4, QHeaderView.Stretch)
-        self.table_view.setWordWrap(True)
-        self.table_view.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        """Setups TableView columns sizing behavior."""
+        self.table_view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents) # Default sizing
+        self.table_view.horizontalHeader().setSectionResizeMode(4, QHeaderView.Stretch) # Stretch task title col
+        self.table_view.setWordWrap(True) # Allow TableView wordwrap
+        self.table_view.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents) # Resize all content
 
     def on_item_double_clicked(self, index):
         """Handles double-clicking a user item in the TreeView."""
-        user_id = index.data(self.USER_ROLE)
+        user_id = index.data(self.USER_ROLE) # Retrieve user id stored in the double-clicked user item
         if user_id:
             self.new_receiver_id = user_id
             self.show_sender_receiver_info(sender_id=config.my_id, receiver_id=self.new_receiver_id)
-            self.update_due_expected_days()
-            self.highlight_selected_deadlines()
-            self.set_send_mode()
-            self.extend_right_splitter()
+            self.update_due_expected_days() # Update remaining days
+            self.highlight_selected_deadlines() # Check date format
+            self.set_send_mode() # Disable all elements except those allowed in send task mode
+            self.extend_right_splitter() # Show task details panel
 
     def send_task(self):
         """Sends/Updates inserted task details to DB."""
-        self.send_button.setEnabled(False)
-        if self.current_task_id:
+        self.send_button.setEnabled(False) # Initially disable send button till valid data is inserted
+        if self.current_task_id: # Update task in case an ID already exists
             update_result = update_task(title=self.title_input.text().upper(),
                                         body=self.body_input.toPlainText(),
                                         reference=self.reference_label.toolTip(),
@@ -718,7 +719,7 @@ class MainWindow(QMainWindow):
                                         reply=self.reply_input.toPlainText(),
                                         done=1 if self.done_checkbox.isChecked() else 0,
                                         task_id=self.current_task_id)
-            if update_result:
+            if update_result: # In case task is updated correctly in the DB
                 playsound_ok()
                 self.status_bar.showMessage(f"{UI_TASK} {self.current_task_id} {UI_TASK_UPDATED}")
                 # Select a dummy index then the previously selected index of the TreeView to update the TableView
@@ -728,7 +729,7 @@ class MainWindow(QMainWindow):
                 self.tree_view.setCurrentIndex(previous_index)
             else:
                 self.send_button.setEnabled(True)
-        else:
+        else: # Send new task in case no task ID is previously defined
             new_task_id = add_task(sender_id=config.my_id,
                                    receiver_id=self.new_receiver_id,
                                    title=self.title_input.text().upper(),
@@ -738,7 +739,7 @@ class MainWindow(QMainWindow):
                                    expected_at=self.expected_at_input.text() + ":00",
                                    starred=1 if self.starred_checkbox.isChecked() else 0,
                                    archived=1 if self.archived_checkbox.isChecked() else 0)
-            if new_task_id:
+            if new_task_id: # In case new task is stored correctly in the DB
                 playsound_ok()
                 self.status_bar.showMessage(f"{UI_TASK} {new_task_id} {UI_TASK_SENT}")
                 # Select the Outbox index of the TreeView to show the updated TableView

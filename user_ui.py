@@ -22,38 +22,42 @@ class UserDialog(QDialog):
 
         layout = QVBoxLayout()
 
-        # User Group
+        # User data Group
         self.user_group = QGroupBox()
 
+            # First name
         self.first_name_label = QLabel(f"{UI_FIRST_NAME}:")
         self.first_name_input = QLineEdit()
         self.first_name_input.setMaxLength(UI_MAX_NAME_LEN)
 
+            # Last name
         self.last_name_label = QLabel(f"{UI_LAST_NAME}:")
         self.last_name_input = QLineEdit()
         self.last_name_input.setMaxLength(UI_MAX_NAME_LEN)
 
+            # Email
         self.email_label = QLabel(f"{UI_EMAIL}: ({UI_COMPANY})")
         self.email_input = QLineEdit(config.config[CFG_EMAIL])
         self.email_input.setMaxLength(UI_MAX_EMAIL_LEN)
 
+            # PIN
         self.pin_label = QLabel(f"{UI_PIN}: ({UI_4_DIGITS})")
         self.pin_input = QLineEdit(config.config[CFG_PIN])
         self.pin_input.setEchoMode(QLineEdit.Password)
         self.pin_input.setValidator((QIntValidator(0, 9999, self)))
         self.pin_input.setMaxLength(4)
 
-        authn_layout = QVBoxLayout()
-        authn_layout.addWidget(self.first_name_label)
-        authn_layout.addWidget(self.first_name_input)
-        authn_layout.addWidget(self.last_name_label)
-        authn_layout.addWidget(self.last_name_input)
-        authn_layout.addWidget(self.email_label)
-        authn_layout.addWidget(self.email_input)
-        authn_layout.addWidget(self.pin_label)
-        authn_layout.addWidget(self.pin_input)
+        group_layout = QVBoxLayout()
+        group_layout.addWidget(self.first_name_label)
+        group_layout.addWidget(self.first_name_input)
+        group_layout.addWidget(self.last_name_label)
+        group_layout.addWidget(self.last_name_input)
+        group_layout.addWidget(self.email_label)
+        group_layout.addWidget(self.email_input)
+        group_layout.addWidget(self.pin_label)
+        group_layout.addWidget(self.pin_input)
 
-        self.user_group.setLayout(authn_layout)
+        self.user_group.setLayout(group_layout)
         layout.addWidget(self.user_group)
 
         self.setLayout(layout)
@@ -73,6 +77,7 @@ class UserSignup(UserDialog):
     def __init__(self):
         super().__init__()
 
+        # Connect text changing of all inherited inputs to signup button enabling check
         self.first_name_input.textChanged.connect(self.check_signup_button)
         self.last_name_input.textChanged.connect(self.check_signup_button)
         self.email_input.textChanged.connect(self.check_signup_button)
@@ -151,6 +156,7 @@ class UserUpdate(UserDialog):
     def __init__(self):
         super().__init__()
 
+        # Connect text changing of all inherited inputs to update button enabling check
         self.first_name_input.textChanged.connect(self.check_update_button)
         self.last_name_input.textChanged.connect(self.check_update_button)
         self.email_input.textChanged.connect(self.check_update_button)
@@ -255,10 +261,12 @@ class UserLogin(QDialog):
         # Login Group
         login_group = QGroupBox(UI_LOGIN)
 
+            # Email
         self.email_label = QLabel(f"{UI_EMAIL}:")
         self.email_input = QLineEdit(config.config[CFG_EMAIL])
         self.email_input.textChanged.connect(self.check_login_button)
 
+            # PIN
         self.pin_label = QLabel(f"{UI_PIN}:")
         self.pin_input = QLineEdit(config.config[CFG_PIN])
         self.pin_input.textChanged.connect(self.check_login_button)
@@ -266,13 +274,13 @@ class UserLogin(QDialog):
         self.pin_input.setValidator((QIntValidator(0, 9999, self)))
         self.pin_input.setMaxLength(4)
 
-        authn_layout = QVBoxLayout()
-        authn_layout.addWidget(self.email_label)
-        authn_layout.addWidget(self.email_input)
-        authn_layout.addWidget(self.pin_label)
-        authn_layout.addWidget(self.pin_input)
+        group_layout = QVBoxLayout()
+        group_layout.addWidget(self.email_label)
+        group_layout.addWidget(self.email_input)
+        group_layout.addWidget(self.pin_label)
+        group_layout.addWidget(self.pin_input)
 
-        login_group.setLayout(authn_layout)
+        login_group.setLayout(group_layout)
         layout.addWidget(login_group)
 
         # Login Button
@@ -288,9 +296,8 @@ class UserLogin(QDialog):
         horizontal_line.setFrameShadow(QFrame.Sunken)
         layout.addWidget(horizontal_line)
 
-        # Sign up Button
+        # Sign up button and layout
         signup_layout = QHBoxLayout()
-
         self.signup_button = QPushButton(f"{UI_NEW_USER}? {UI_SIGNUP}")
         self.signup_button.setCursor(QCursor(Qt.PointingHandCursor))
         self.signup_button.setStyleSheet("QPushButton { border: none; }")

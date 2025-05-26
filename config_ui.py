@@ -25,6 +25,7 @@ class ConfigDialog(QDialog):
         db_path_group = QGroupBox(DB_NAME)
         db_path_group_layout = QVBoxLayout()
 
+        # Radio buttons
         db_radio_layout = QHBoxLayout()
         self.db_existing = QRadioButton(UI_DB_EXISTING)
         self.db_existing.setChecked(True)
@@ -34,13 +35,17 @@ class ConfigDialog(QDialog):
         db_radio_layout.addStretch()
         db_path_group_layout.addLayout(db_radio_layout)
 
+        # DB path input
         db_path_layout = QHBoxLayout()
         self.db_path = QLineEdit()
         self.db_path.setReadOnly(True)
+
+        # DB tool button
         self.db_menu_button = QToolButton(self)
         self.db_menu_button.setText("... ")
         self.db_menu_button.setPopupMode(QToolButton.InstantPopup)
 
+        # DB path menu
         self.db_menu = QMenu(self)
         select_db_action = QAction(UI_SELECT_PATH, self)
         select_db_action.triggered.connect(self.select_db_path)
@@ -60,7 +65,7 @@ class ConfigDialog(QDialog):
         horizontal_line.setFrameShadow(QFrame.Sunken)
         layout.addWidget(horizontal_line)
 
-        # Connect Button
+        # Connect button
         self.connect_button = QPushButton(UI_CONNECT)
         self.connect_button.setCursor(QCursor(Qt.PointingHandCursor))
         self.connect_button.setEnabled(False)
